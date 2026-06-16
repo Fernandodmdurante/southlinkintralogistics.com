@@ -664,7 +664,12 @@
     </div>
 
     <div>
-      <form id="lead-form">
+      <form id="lead-form" action="https://formsubmit.co/fernando@southlinkintralogistics.com" method="POST">
+        <!-- FormSubmit config -->
+        <input type="hidden" name="_subject" value="🏭 Novo lead Zikoo — Análise de projeto solicitada">
+        <input type="hidden" name="_captcha" value="false">
+        <input type="hidden" name="_template" value="table">
+        <input type="hidden" name="_next" value="https://southlinkintralogistics.com/obrigado.html">
         <div class="form-row">
           <div class="form-group">
             <label for="nome">Nome completo *</label>
@@ -755,39 +760,6 @@
       const el = document.querySelector(a.getAttribute('href'));
       if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
     });
-  });
-
-  // Form submission — envia para Formspree (substitua YOUR_FORM_ID pelo ID real)
-  const form = document.getElementById('lead-form');
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault();
-
-    const data = new FormData(form);
-    const payload = Object.fromEntries(data.entries());
-
-    // Log local (debug)
-    console.log('Lead capturado:', JSON.stringify(payload, null, 2));
-
-    // =====================================================
-    // OPÇÃO A — Formspree (grátis até 50 leads/mês)
-    // Crie uma conta em formspree.io e substitua o endpoint:
-    // const endpoint = 'https://formspree.io/f/SEU_FORM_ID';
-    //
-    // OPÇÃO B — FormSubmit (sem cadastro)
-    // const endpoint = 'https://formsubmit.co/SEU_EMAIL@gmail.com';
-    //
-    // OPÇÃO C — integrar com seu servidor ou Make/n8n webhook
-    // =====================================================
-
-    // Simulação de envio para demonstração
-    const btn = form.querySelector('.btn-submit');
-    btn.textContent = 'Enviando...';
-    btn.disabled = true;
-
-    await new Promise(r => setTimeout(r, 1200)); // simula req
-
-    form.style.display = 'none';
-    document.getElementById('form-success').classList.add('active');
   });
 </script>
 
