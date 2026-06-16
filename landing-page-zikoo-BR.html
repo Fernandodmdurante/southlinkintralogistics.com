@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Zikoo R-bot 4-Way Shuttle — Armazenagem de Alta Densidade no Brasil</title>
+<meta name="description" content="Maximize o espaço do seu armazém em até 4x com o shuttle inteligente 4 vias da Zikoo. Solicite uma análise de projeto gratuita.">
+
+<!-- Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Barlow+Condensed:wght@700;800&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --green: #1D9E75;
+    --green-dark: #0F6E56;
+    --green-light: #E1F5EE;
+    --black: #0B0C0E;
+    --gray: #6B7280;
+    --gray-light: #F3F4F6;
+    --white: #FFFFFF;
+    --border: #E5E7EB;
+    --accent: #00D68F;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--black);
+    color: var(--white);
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+
+  /* NAV */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    padding: 16px 24px;
+    display: flex; align-items: center; justify-content: space-between;
+    background: rgba(11,12,14,0.85);
+    backdrop-filter: blur(12px);
+    border-bottom: 0.5px solid rgba(255,255,255,0.08);
+  }
+  .nav-logo { display: flex; align-items: center; gap: 10px; }
+  .nav-logo img { height: 28px; }
+  .nav-logo span { font-size: 12px; color: rgba(255,255,255,0.45); letter-spacing: .04em; }
+  .nav-cta {
+    background: var(--green);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 8px 18px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background .2s;
+  }
+  .nav-cta:hover { background: var(--green-dark); }
+
+  /* HERO */
+  .hero {
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+    padding-top: 64px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero-bg {
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse 60% 60% at 70% 50%, rgba(29,158,117,.12) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .hero-grid-lines {
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(rgba(255,255,255,.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,.03) 1px, transparent 1px);
+    background-size: 60px 60px;
+    pointer-events: none;
+  }
+
+  .hero-left {
+    display: flex; flex-direction: column; justify-content: center;
+    padding: 80px 60px 80px 80px;
+    position: relative; z-index: 1;
+  }
+
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 11px; font-weight: 600; letter-spacing: .1em;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 24px;
+  }
+  .eyebrow-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+
+  .hero-title {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: clamp(52px, 6vw, 80px);
+    font-weight: 800;
+    line-height: .95;
+    letter-spacing: -.01em;
+    margin-bottom: 24px;
+  }
+  .hero-title .highlight {
+    color: var(--green);
+    display: block;
+  }
+
+  .hero-sub {
+    font-size: 17px;
+    color: rgba(255,255,255,.65);
+    line-height: 1.65;
+    max-width: 480px;
+    margin-bottom: 40px;
+  }
+
+  .hero-stats {
+    display: flex; gap: 32px; margin-bottom: 40px;
+  }
+  .stat-item { }
+  .stat-val {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 36px; font-weight: 700;
+    color: var(--white);
+    line-height: 1;
+  }
+  .stat-val span { color: var(--green); }
+  .stat-lbl { font-size: 12px; color: rgba(255,255,255,.45); margin-top: 4px; }
+
+  .hero-cta-group { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+
+  .btn-primary {
+    background: var(--green);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 14px 28px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex; align-items: center; gap: 8px;
+    transition: background .2s, transform .1s;
+  }
+  .btn-primary:hover { background: var(--green-dark); transform: translateY(-1px); }
+
+  .btn-ghost {
+    background: transparent;
+    color: rgba(255,255,255,.7);
+    border: 0.5px solid rgba(255,255,255,.2);
+    border-radius: 8px;
+    padding: 14px 24px;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    text-decoration: none;
+    transition: border-color .2s, color .2s;
+  }
+  .btn-ghost:hover { border-color: rgba(255,255,255,.5); color: #fff; }
+
+  .hero-right {
+    position: relative;
+    display: flex; align-items: center; justify-content: center;
+    padding: 80px 60px;
+  }
+  .hero-image-wrap {
+    position: relative;
+    width: 100%;
+    max-width: 520px;
+  }
+  .hero-image-wrap img {
+    width: 100%;
+    border-radius: 12px;
+    filter: drop-shadow(0 40px 80px rgba(0,214,143,.15));
+  }
+  .hero-badge {
+    position: absolute;
+    bottom: -20px; left: -20px;
+    background: var(--black);
+    border: 0.5px solid rgba(255,255,255,.12);
+    border-radius: 12px;
+    padding: 14px 18px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .hero-badge-icon {
+    width: 36px; height: 36px; border-radius: 8px;
+    background: var(--green-dark);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+  }
+  .hero-badge-text { }
+  .hero-badge-text strong { display: block; font-size: 14px; color: #fff; }
+  .hero-badge-text span { font-size: 11px; color: rgba(255,255,255,.45); }
+
+  /* LOGOBELT */
+  .logobelt {
+    padding: 32px 80px;
+    border-top: 0.5px solid rgba(255,255,255,.06);
+    border-bottom: 0.5px solid rgba(255,255,255,.06);
+    display: flex; align-items: center; gap: 16px;
+  }
+  .logobelt-label { font-size: 11px; color: rgba(255,255,255,.3); white-space: nowrap; letter-spacing: .06em; text-transform: uppercase; }
+  .logobelt-divider { width: 1px; height: 24px; background: rgba(255,255,255,.1); }
+  .logobelt-items { display: flex; gap: 36px; align-items: center; flex-wrap: wrap; }
+  .logobelt-item { font-size: 12px; font-weight: 600; color: rgba(255,255,255,.3); letter-spacing: .08em; text-transform: uppercase; }
+
+  /* SECTION */
+  section { padding: 100px 80px; }
+  .section-label {
+    font-size: 11px; font-weight: 600; letter-spacing: .1em;
+    color: var(--green);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+  .section-title {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: clamp(36px, 4vw, 56px);
+    font-weight: 800;
+    line-height: 1.0;
+    margin-bottom: 16px;
+  }
+  .section-sub {
+    font-size: 16px;
+    color: rgba(255,255,255,.55);
+    max-width: 600px;
+    line-height: 1.7;
+    margin-bottom: 60px;
+  }
+
+  /* PROBLEMA */
+  .problema { background: rgba(255,255,255,.02); }
+  .problema-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2px;
+  }
+  .problema-card {
+    padding: 36px;
+    border: 0.5px solid rgba(255,255,255,.07);
+    position: relative;
+  }
+  .problema-card:nth-child(1) { border-top-left-radius: 12px; }
+  .problema-card:nth-child(2) { border-top-right-radius: 12px; }
+  .problema-card:nth-child(3) { border-bottom-left-radius: 12px; }
+  .problema-card:nth-child(4) { border-bottom-right-radius: 12px; }
+  .problema-icon {
+    width: 40px; height: 40px; border-radius: 10px;
+    background: rgba(255,255,255,.05);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+    margin-bottom: 16px;
+  }
+  .problema-card h3 { font-size: 17px; font-weight: 600; margin-bottom: 8px; }
+  .problema-card p { font-size: 14px; color: rgba(255,255,255,.5); line-height: 1.6; }
+
+  /* PRODUTO */
+  .produto-layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 80px;
+    align-items: center;
+  }
+  .produto-image {
+    border-radius: 16px;
+    overflow: hidden;
+    border: 0.5px solid rgba(255,255,255,.08);
+  }
+  .produto-image img { width: 100%; display: block; }
+  .specs-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2px;
+    margin-bottom: 32px;
+  }
+  .spec-card {
+    padding: 20px;
+    background: rgba(255,255,255,.04);
+    border: 0.5px solid rgba(255,255,255,.07);
+  }
+  .spec-card:first-child { border-top-left-radius: 10px; }
+  .spec-card:nth-child(2) { border-top-right-radius: 10px; }
+  .spec-card:nth-child(3) { border-bottom-left-radius: 10px; }
+  .spec-card:last-child { border-bottom-right-radius: 10px; }
+  .spec-val { font-family: 'Barlow Condensed', sans-serif; font-size: 28px; font-weight: 700; color: var(--green); }
+  .spec-lbl { font-size: 12px; color: rgba(255,255,255,.45); margin-top: 2px; }
+  .check-list { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+  .check-list li { display: flex; align-items: flex-start; gap: 10px; font-size: 14px; color: rgba(255,255,255,.7); }
+  .check-list li::before { content: '✓'; color: var(--green); font-weight: 700; flex-shrink: 0; margin-top: 1px; }
+
+  /* BENEFÍCIOS */
+  .benefits { background: rgba(255,255,255,.02); }
+  .benefits-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+  }
+  .benefit-card {
+    padding: 32px 28px;
+    background: rgba(255,255,255,.03);
+    border: 0.5px solid rgba(255,255,255,.08);
+    border-radius: 12px;
+    transition: border-color .2s;
+  }
+  .benefit-card:hover { border-color: rgba(29,158,117,.4); }
+  .benefit-num {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 52px; font-weight: 800;
+    color: var(--green);
+    opacity: .2;
+    line-height: 1;
+    margin-bottom: 8px;
+  }
+  .benefit-card h3 { font-size: 16px; font-weight: 600; margin-bottom: 8px; }
+  .benefit-card p { font-size: 13px; color: rgba(255,255,255,.5); line-height: 1.6; }
+
+  /* FORM SECTION */
+  .form-section {
+    background: linear-gradient(135deg, rgba(29,158,117,.08) 0%, rgba(11,12,14,1) 50%);
+    padding: 100px 80px;
+    position: relative;
+  }
+  .form-section::before {
+    content: '';
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(rgba(255,255,255,.02) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,.02) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+  }
+  .form-container {
+    max-width: 920px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 80px;
+    align-items: start;
+    position: relative; z-index: 1;
+  }
+  .form-left h2 {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 48px; font-weight: 800;
+    line-height: 1.0;
+    margin-bottom: 16px;
+  }
+  .form-left p {
+    font-size: 15px; color: rgba(255,255,255,.55);
+    line-height: 1.65;
+    margin-bottom: 32px;
+  }
+  .promise-list { display: flex; flex-direction: column; gap: 12px; }
+  .promise-item { display: flex; align-items: center; gap: 10px; font-size: 14px; color: rgba(255,255,255,.65); }
+  .promise-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); flex-shrink: 0; }
+
+  /* FORM */
+  form { display: flex; flex-direction: column; gap: 14px; }
+  .form-group { display: flex; flex-direction: column; gap: 6px; }
+  label { font-size: 12px; font-weight: 600; color: rgba(255,255,255,.5); letter-spacing: .04em; text-transform: uppercase; }
+  input, select, textarea {
+    background: rgba(255,255,255,.06);
+    border: 0.5px solid rgba(255,255,255,.15);
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-size: 14px;
+    color: #fff;
+    font-family: 'Inter', sans-serif;
+    transition: border-color .2s;
+    width: 100%;
+  }
+  input::placeholder, textarea::placeholder { color: rgba(255,255,255,.25); }
+  input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: var(--green);
+  }
+  select option { background: #1a1b1e; color: #fff; }
+  textarea { resize: vertical; min-height: 80px; }
+
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  .btn-submit {
+    background: var(--green);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 16px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    width: 100%;
+    margin-top: 4px;
+    transition: background .2s, transform .1s;
+    letter-spacing: .02em;
+  }
+  .btn-submit:hover { background: var(--green-dark); transform: translateY(-1px); }
+  .form-privacy { font-size: 11px; color: rgba(255,255,255,.3); text-align: center; line-height: 1.5; }
+
+  /* SUCCESS */
+  .form-success {
+    display: none;
+    text-align: center;
+    padding: 48px 32px;
+    background: rgba(29,158,117,.08);
+    border: 0.5px solid rgba(29,158,117,.3);
+    border-radius: 16px;
+  }
+  .form-success.active { display: block; }
+  .form-success h3 { font-size: 24px; font-weight: 700; margin-bottom: 12px; color: var(--green); }
+  .form-success p { font-size: 14px; color: rgba(255,255,255,.6); }
+
+  /* FOOTER */
+  footer {
+    padding: 32px 80px;
+    border-top: 0.5px solid rgba(255,255,255,.06);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+  footer img { height: 24px; opacity: .6; }
+  .footer-rep {
+    font-size: 12px;
+    color: rgba(255,255,255,.35);
+    text-align: center;
+  }
+  .footer-rep a { color: rgba(255,255,255,.5); text-decoration: none; }
+  footer .footer-right { font-size: 12px; color: rgba(255,255,255,.25); }
+
+  /* RESPONSIVE */
+  @media (max-width: 900px) {
+    nav { padding: 14px 20px; }
+    .hero { grid-template-columns: 1fr; min-height: auto; padding-top: 80px; }
+    .hero-left { padding: 48px 24px 32px; }
+    .hero-right { padding: 0 24px 60px; }
+    .hero-badge { left: 8px; bottom: 8px; }
+    .hero-stats { gap: 20px; flex-wrap: wrap; }
+    section { padding: 60px 24px; }
+    .logobelt { padding: 24px; }
+    .problema-grid { grid-template-columns: 1fr; }
+    .produto-layout { grid-template-columns: 1fr; gap: 40px; }
+    .benefits-grid { grid-template-columns: 1fr; }
+    .form-section { padding: 60px 24px; }
+    .form-container { grid-template-columns: 1fr; gap: 40px; }
+    .form-row { grid-template-columns: 1fr; }
+    footer { padding: 24px; flex-direction: column; text-align: center; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">
+    <img src="https://www.zikooint.com/wp-content/uploads/2023/12/zikoo-logo.png" alt="Zikoo Robotics" onerror="this.style.display='none'">
+    <span>Representado pela South Link Intralogistics</span>
+  </div>
+  <a href="#formulario" class="nav-cta">Solicitar análise gratuita</a>
+</nav>
+
+<!-- HERO -->
+<section class="hero" style="padding:0; padding-top:64px;">
+  <div class="hero-bg"></div>
+  <div class="hero-grid-lines"></div>
+
+  <div class="hero-left">
+    <div class="eyebrow"><span class="eyebrow-dot"></span> Sistema de armazenagem inteligente</div>
+
+    <h1 class="hero-title">
+      Seu armazém<br>
+      <span class="highlight">4× mais denso.</span>
+      Sem ampliar<br>o galpão.
+    </h1>
+
+    <p class="hero-sub">
+      O R-bot 4-Way Shuttle da Zikoo move paletes em qualquer direção com 2,5 m/s — e libera até 4× mais espaço de armazenagem no mesmo footprint que você já tem.
+    </p>
+
+    <div class="hero-stats">
+      <div class="stat-item">
+        <div class="stat-val">2<span>.5m/s</span></div>
+        <div class="stat-lbl">Velocidade máxima</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-val">1<span>.5t</span></div>
+        <div class="stat-lbl">Carga por unidade</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-val">-25<span>°C</span></div>
+        <div class="stat-lbl">Opera em câmara fria</div>
+      </div>
+    </div>
+
+    <div class="hero-cta-group">
+      <a href="#formulario" class="btn-primary">
+        Solicitar análise de projeto gratuita →
+      </a>
+      <a href="https://www.zikooint.com/4-way-pallet-shuttle" target="_blank" class="btn-ghost">
+        Ver especificações técnicas
+      </a>
+    </div>
+  </div>
+
+  <div class="hero-right">
+    <div class="hero-image-wrap">
+      <img
+        src="https://www.zikooint.com/wp-content/uploads/2025/03/Four-Way-Pallet-Shuttle-zikoo-robotics-scaled.webp"
+        alt="Zikoo R-bot 4-Way Pallet Shuttle em operação"
+        loading="eager"
+      >
+      <div class="hero-badge">
+        <div class="hero-badge-icon">⚡</div>
+        <div class="hero-badge-text">
+          <strong>10h de autonomia</strong>
+          <span>Bateria de longa duração</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- LOGOBELT -->
+<div class="logobelt">
+  <span class="logobelt-label">Setores atendidos</span>
+  <div class="logobelt-divider"></div>
+  <div class="logobelt-items">
+    <span class="logobelt-item">Alimentos & Bebidas</span>
+    <span class="logobelt-item">Câmara Fria</span>
+    <span class="logobelt-item">Farmacêutico</span>
+    <span class="logobelt-item">Atacado & Distribuição</span>
+    <span class="logobelt-item">Automotivo</span>
+    <span class="logobelt-item">3PL / Operadores Logísticos</span>
+  </div>
+</div>
+
+<!-- PROBLEMA -->
+<section class="problema">
+  <div class="section-label">O desafio do armazém moderno</div>
+  <h2 class="section-title">O galpão está cheio.<br>A operação, travada.</h2>
+  <p class="section-sub">Construir mais m² custa caro e demora. O shuttle 4-way resolve sem obra.</p>
+
+  <div class="problema-grid">
+    <div class="problema-card">
+      <div class="problema-icon">📦</div>
+      <h3>Espaço desperdiçado nas alturas</h3>
+      <p>Corredores de empilhadeira ocupam 40–60% do piso. Paletes ficam empilhados baixo por falta de sistema automatizado.</p>
+    </div>
+    <div class="problema-card">
+      <div class="problema-icon">⏱</div>
+      <h3>Lentidão na entrada e saída de paletes</h3>
+      <p>Operação manual gera filas, erros de picking e atrasos na expedição, especialmente em picos de demanda.</p>
+    </div>
+    <div class="problema-card">
+      <div class="problema-icon">❄️</div>
+      <h3>Custo energético altíssimo em câmara fria</h3>
+      <p>Cada m³ refrigerado que não é aproveitado é dinheiro jogado fora em energia elétrica 24h por dia.</p>
+    </div>
+    <div class="problema-card">
+      <div class="problema-icon">📐</div>
+      <h3>Layout rígido que não escala</h3>
+      <p>Sistemas convencionais drive-in e push-back não permitem multi-SKU, mistura de tamanhos ou expansão fácil.</p>
+    </div>
+  </div>
+</section>
+
+<!-- PRODUTO -->
+<section class="produto">
+  <div class="section-label">Solução Zikoo</div>
+  <div class="produto-layout">
+    <div class="produto-image">
+      <img
+        src="https://www.zikooint.com/wp-content/uploads/2025/03/Four-Way-Pallet-Shuttle-zikoo-robotics-1.webp"
+        alt="Zikoo 4-Way Shuttle — detalhe técnico"
+        loading="lazy"
+      >
+    </div>
+
+    <div>
+      <h2 class="section-title">R-bot 4-Way<br>Pallet Shuttle</h2>
+      <p class="section-sub" style="margin-bottom:28px;">O único shuttle que se move nas 4 direções dentro do racking — sem trilhos fixos por corredor, sem restrição de layout.</p>
+
+      <div class="specs-grid">
+        <div class="spec-card">
+          <div class="spec-val">2.5 m/s</div>
+          <div class="spec-lbl">Velocidade vazio</div>
+        </div>
+        <div class="spec-card">
+          <div class="spec-val">±1mm</div>
+          <div class="spec-lbl">Precisão de posição</div>
+        </div>
+        <div class="spec-card">
+          <div class="spec-val">1.5 ton</div>
+          <div class="spec-lbl">Carga nominal</div>
+        </div>
+        <div class="spec-card">
+          <div class="spec-val">IP68</div>
+          <div class="spec-lbl">Controle industrial</div>
+        </div>
+      </div>
+
+      <ul class="check-list">
+        <li>Funciona de -25°C até 45°C — ideal para câmara fria</li>
+        <li>Suporta mistura de tamanhos de palete no mesmo canal</li>
+        <li>WiFi 6 para comutação ultrarrápida entre setores</li>
+        <li>10h de autonomia com carregamento automático</li>
+        <li>Integra com WMS, H-bot elevadores e transportadores</li>
+        <li>Detecção a laser anti-colisão e proteção STO</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- BENEFÍCIOS -->
+<section class="benefits">
+  <div class="section-label">Por que escolher a Zikoo</div>
+  <h2 class="section-title">Resultado em números</h2>
+  <p class="section-sub">Projetos reais implementados globalmente em frigoríficos, distribuidoras e indústrias.</p>
+
+  <div class="benefits-grid">
+    <div class="benefit-card">
+      <div class="benefit-num">4×</div>
+      <h3>Mais posições de armazenagem no mesmo footprint</h3>
+      <p>A tecnologia de alta densidade ocupa 100% do volume disponível, incluindo altura máxima do pé-direito.</p>
+    </div>
+    <div class="benefit-card">
+      <div class="benefit-num">5s</div>
+      <h3>Para saída de um palete do sistema</h3>
+      <p>Ciclo de picking mais rápido que qualquer drive-in ou push-back convencional no mercado.</p>
+    </div>
+    <div class="benefit-card">
+      <div class="benefit-num">ROI</div>
+      <h3>Retorno rápido por redução de área e energia</h3>
+      <p>Menos m² construídos, menos corredores, menos consumo em câmara fria — o payback é claro e mensurável.</p>
+    </div>
+  </div>
+</section>
+
+<!-- FORMULÁRIO -->
+<section class="form-section" id="formulario">
+  <div class="form-container">
+    <div class="form-left">
+      <div class="section-label">Análise gratuita de projeto</div>
+      <h2>Vamos calcular o ganho<br>no seu armazém</h2>
+      <p>Preencha o formulário e um especialista da South Link Intralogistics entrará em contato em até 24h com uma análise preliminar de densidade e ROI estimado para o seu caso.</p>
+
+      <div class="promise-list">
+        <div class="promise-item"><span class="promise-dot"></span>Sem compromisso — análise 100% gratuita</div>
+        <div class="promise-item"><span class="promise-dot"></span>Resposta em até 24h úteis</div>
+        <div class="promise-item"><span class="promise-dot"></span>Dimensionamento personalizado para seu layout</div>
+        <div class="promise-item"><span class="promise-dot"></span>Especialistas com projetos no Brasil e LATAM</div>
+      </div>
+    </div>
+
+    <div>
+      <form id="lead-form">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="nome">Nome completo *</label>
+            <input type="text" id="nome" name="nome" placeholder="Seu nome" required>
+          </div>
+          <div class="form-group">
+            <label for="cargo">Cargo *</label>
+            <input type="text" id="cargo" name="cargo" placeholder="Ex: Gerente de Logística" required>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="empresa">Empresa *</label>
+          <input type="text" id="empresa" name="empresa" placeholder="Nome da empresa" required>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="email">E-mail corporativo *</label>
+            <input type="email" id="email" name="email" placeholder="voce@empresa.com.br" required>
+          </div>
+          <div class="form-group">
+            <label for="whatsapp">WhatsApp</label>
+            <input type="tel" id="whatsapp" name="whatsapp" placeholder="+55 (41) 99999-9999">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="setor">Setor de atuação *</label>
+            <select id="setor" name="setor" required>
+              <option value="" disabled selected>Selecione...</option>
+              <option>Alimentos & Bebidas</option>
+              <option>Câmara Fria / Refrigerados</option>
+              <option>Farmacêutico</option>
+              <option>Atacado & Distribuição</option>
+              <option>Automotivo</option>
+              <option>Operador Logístico (3PL)</option>
+              <option>E-commerce / Varejo</option>
+              <option>Outro</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="paletes">Qtd. de paletes estimada</label>
+            <select id="paletes" name="paletes">
+              <option value="" disabled selected>Selecione...</option>
+              <option>Até 1.000 paletes</option>
+              <option>1.000 – 5.000 paletes</option>
+              <option>5.000 – 20.000 paletes</option>
+              <option>Acima de 20.000 paletes</option>
+              <option>Ainda não sei estimar</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="mensagem">Descreva brevemente seu desafio atual</label>
+          <textarea id="mensagem" name="mensagem" placeholder="Ex: Precisamos triplicar a capacidade de câmara fria sem construção..."></textarea>
+        </div>
+
+        <button type="submit" class="btn-submit">Quero minha análise gratuita →</button>
+        <p class="form-privacy">Seus dados são usados exclusivamente para o contato comercial. Não há spam.</p>
+      </form>
+
+      <div class="form-success" id="form-success">
+        <h3>✓ Recebemos seu pedido!</h3>
+        <p>Em até 24h úteis um especialista da South Link Intralogistics vai entrar em contato com você.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <img src="https://www.zikooint.com/wp-content/uploads/2023/12/zikoo-logo.png" alt="Zikoo Robotics" onerror="this.style.display='none'">
+  <div class="footer-rep">
+    Representação exclusiva no Brasil e LATAM por
+    <a href="https://southlinkintralogistics.com" target="_blank">South Link Intralogistics</a>
+  </div>
+  <div class="footer-right">© 2025 South Link Intralogistics</div>
+</footer>
+
+<script>
+  // Smooth scroll
+  document.querySelectorAll('a[href^="#"]').forEach(a => {
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      const el = document.querySelector(a.getAttribute('href'));
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+
+  // Form submission — envia para Formspree (substitua YOUR_FORM_ID pelo ID real)
+  const form = document.getElementById('lead-form');
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const data = new FormData(form);
+    const payload = Object.fromEntries(data.entries());
+
+    // Log local (debug)
+    console.log('Lead capturado:', JSON.stringify(payload, null, 2));
+
+    // =====================================================
+    // OPÇÃO A — Formspree (grátis até 50 leads/mês)
+    // Crie uma conta em formspree.io e substitua o endpoint:
+    // const endpoint = 'https://formspree.io/f/SEU_FORM_ID';
+    //
+    // OPÇÃO B — FormSubmit (sem cadastro)
+    // const endpoint = 'https://formsubmit.co/SEU_EMAIL@gmail.com';
+    //
+    // OPÇÃO C — integrar com seu servidor ou Make/n8n webhook
+    // =====================================================
+
+    // Simulação de envio para demonstração
+    const btn = form.querySelector('.btn-submit');
+    btn.textContent = 'Enviando...';
+    btn.disabled = true;
+
+    await new Promise(r => setTimeout(r, 1200)); // simula req
+
+    form.style.display = 'none';
+    document.getElementById('form-success').classList.add('active');
+  });
+</script>
+
+</body>
+</html>
