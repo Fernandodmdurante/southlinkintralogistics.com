@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>South Link CRM</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
+<style>
+  :root {
+    --bg: #ffffff;
+    --bg2: #f5f5f3;
+    --bg3: #eeede9;
+    --text: #1a1a18;
+    --text2: #6b6b66;
+    --text3: #999993;
+    --border: rgba(0,0,0,0.12);
+    --border2: rgba(0,0,0,0.22);
+    --green: #1D9E75;
+    --green-bg: #E1F5EE;
+    --green-dark: #085041;
+    --amber: #BA7517;
+    --amber-bg: #FAEEDA;
+    --amber-dark: #633806;
+    --red: #E24B4A;
+    --red-bg: #FCEBEB;
+    --red-dark: #791F1F;
+    --blue-bg: #E6F1FB;
+    --blue-dark: #0C447C;
+    --radius: 8px;
+    --radius-lg: 12px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1c1c1a;
+      --bg2: #252523;
+      --bg3: #2e2e2b;
+      --text: #f0efe8;
+      --text2: #9b9b94;
+      --text3: #6b6b66;
+      --border: rgba(255,255,255,0.1);
+      --border2: rgba(255,255,255,0.2);
+      --green-bg: #04342C;
+      --green-dark: #9FE1CB;
+      --amber-bg: #412402;
+      --amber-dark: #FAC775;
+      --red-bg: #501313;
+      --red-dark: #F7C1C1;
+      --blue-bg: #042C53;
+      --blue-dark: #B5D4F4;
+    }
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; background: var(--bg3); color: var(--text); font-size: 14px; min-height: 100vh; }
+  
+  header { background: var(--bg); border-bottom: 0.5px solid var(--border); padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 50; }
+  .brand { font-size: 16px; font-weight: 600; color: var(--text); }
+  .brand span { color: var(--green); }
+  .btn { display: inline-flex; align-items: center; gap: 5px; padding: 7px 14px; border-radius: var(--radius); border: 0.5px solid var(--border2); background: var(--bg); color: var(--text); font-size: 13px; cursor: pointer; font-family: inherit; transition: background .15s; }
+  .btn:hover { background: var(--bg2); }
+  .btn-pri { background: var(--green-bg); border-color: var(--green); color: var(--green-dark); font-weight: 500; }
+  .btn-pri:hover { filter: brightness(0.95); }
+  .btn-danger { background: var(--red-bg); border-color: var(--red); color: var(--red-dark); }
+  .btn-danger:hover { filter: brightness(0.95); }
+  .btn-sm { padding: 5px 10px; font-size: 12px; }
+
+  main { padding: 14px; max-width: 1400px; margin: 0 auto; }
+  
+  .filter-bar { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; }
+  .pill { font-size: 12px; padding: 5px 12px; border-radius: 20px; border: 0.5px solid var(--border2); background: var(--bg); color: var(--text2); cursor: pointer; font-family: inherit; transition: all .15s; }
+  .pill.on { background: var(--bg3); color: var(--text); border-color: var(--border2); font-weight: 500; }
+  .pill:hover { background: var(--bg2); }
+  .filter-bar select { font-size: 12px; padding: 5px 8px; border-radius: var(--radius); border: 0.5px solid var(--border2); background: var(--bg); color: var(--text); font-family: inherit; cursor: pointer; }
+  .sep { color: var(--border2); margin: 0 2px; font-size: 18px; line-height: 1; }
+
+  .stats-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-bottom: 14px; }
+  .stat { background: var(--bg); border-radius: var(--radius); padding: 12px 14px; border: 0.5px solid var(--border); }
+  .stat-l { font-size: 11px; color: var(--text2); margin-bottom: 4px; }
+  .stat-v { font-size: 22px; font-weight: 600; color: var(--text); }
+
+  .kanban { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; align-items: start; }
+  @media (max-width: 900px) { .kanban { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 500px) { .kanban { grid-template-columns: 1fr; } .stats-row { grid-template-columns: repeat(2, 1fr); } }
+
+  .col { background: var(--bg2); border-radius: var(--radius-lg); padding: 10px; }
+  .col-h { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .col-title { font-size: 12px; font-weight: 500; color: var(--text); display: flex; align-items: center; gap: 5px; }
+  .col-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .col-cnt { font-size: 11px; color: var(--text2); background: var(--bg); padding: 1px 7px; border-radius: 10px; border: 0.5px solid var(--border); }
+
+  .card { background: var(--bg); border-radius: var(--radius); border: 0.5px solid var(--border); padding: 10px 12px; margin-bottom: 8px; cursor: pointer; transition: border-color .15s, box-shadow .15s; }
+  .card:hover { border-color: var(--border2); box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+  .card.alert-yellow { border-left: 3px solid #EF9F27; border-radius: 0 var(--radius) var(--radius) 0; }
+  .card.alert-red { border-left: 3px solid var(--red); border-radius: 0 var(--radius) var(--radius) 0; }
+  .card-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 6px; gap: 6px; }
+  .card-id { font-size: 10px; color: var(--text3); font-family: monospace; flex-shrink: 0; }
+  .rep-b { font-size: 10px; padding: 2px 6px; border-radius: 10px; font-weight: 500; white-space: nowrap; flex-shrink: 0; }
+  .r0 { background: var(--green-bg); color: var(--green-dark); }
+  .r1 { background: var(--blue-bg); color: var(--blue-dark); }
+  .r2 { background: var(--amber-bg); color: var(--amber-dark); }
+  .r3 { background: #FBEAF0; color: #72243E; }
+  .card-title { font-size: 12px; font-weight: 500; color: var(--text); margin-bottom: 3px; line-height: 1.35; }
+  .card-client { font-size: 11px; color: var(--text2); margin-bottom: 5px; }
+  .alert-chip { display: inline-flex; align-items: center; gap: 3px; font-size: 10px; padding: 2px 7px; border-radius: 8px; margin-bottom: 5px; font-weight: 500; }
+  .alert-chip.y { background: var(--amber-bg); color: var(--amber-dark); }
+  .alert-chip.r { background: var(--red-bg); color: var(--red-dark); }
+  .rev-b { display: inline-flex; align-items: center; gap: 2px; font-size: 9px; padding: 1px 5px; border-radius: 8px; background: var(--amber-bg); color: var(--amber-dark); margin-left: 4px; }
+  .card-foot { display: flex; align-items: center; justify-content: space-between; }
+  .card-val { font-size: 11px; font-weight: 500; color: var(--text); }
+  .card-date { font-size: 10px; color: var(--text3); }
+
+  /* Modal */
+  .overlay { position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 200; display: flex; align-items: flex-start; justify-content: center; padding: 20px 12px; overflow-y: auto; }
+  .modal { background: var(--bg); border-radius: var(--radius-lg); border: 0.5px solid var(--border2); padding: 20px; width: 100%; max-width: 520px; margin: auto; }
+  .modal-h { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 16px; gap: 10px; }
+  .modal-h h2 { font-size: 15px; font-weight: 600; line-height: 1.3; }
+  .close-btn { background: none; border: none; cursor: pointer; font-size: 20px; color: var(--text2); line-height: 1; padding: 0; flex-shrink: 0; }
+  .fg { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
+  .fg label { font-size: 11px; color: var(--text2); font-weight: 500; }
+  .fg input, .fg select, .fg textarea { font-family: inherit; font-size: 13px; padding: 8px 10px; border-radius: var(--radius); border: 0.5px solid var(--border2); background: var(--bg); color: var(--text); width: 100%; }
+  .fg input:focus, .fg select:focus, .fg textarea:focus { outline: none; border-color: var(--green); box-shadow: 0 0 0 2px rgba(29,158,117,0.15); }
+  .fg textarea { resize: vertical; min-height: 70px; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .full { grid-column: 1 / -1; }
+  .modal-foot { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; border-top: 0.5px solid var(--border); padding-top: 16px; flex-wrap: wrap; }
+  .sec-lbl { font-size: 10px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 6px; margin-top: 12px; }
+  .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 10px 0; }
+  .di .dl { font-size: 11px; color: var(--text2); margin-bottom: 2px; }
+  .di .dv { font-size: 13px; font-weight: 500; color: var(--text); }
+  .notes-box { font-size: 12px; color: var(--text2); background: var(--bg2); border-radius: var(--radius); padding: 10px 12px; margin: 8px 0; line-height: 1.6; }
+  .motivo-box { font-size: 12px; background: var(--red-bg); color: var(--red-dark); border-radius: var(--radius); padding: 10px 12px; margin: 8px 0; line-height: 1.5; display: flex; align-items: center; gap: 8px; }
+  .alert-box { display: flex; align-items: flex-start; gap: 8px; padding: 10px 12px; border-radius: var(--radius); margin-bottom: 12px; font-size: 12px; line-height: 1.5; }
+  .alert-box.y { background: var(--amber-bg); color: var(--amber-dark); }
+  .alert-box.r { background: var(--red-bg); color: var(--red-dark); }
+  .alert-box strong { display: block; margin-bottom: 2px; font-size: 12px; }
+  .badge-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+  .badge { font-size: 11px; padding: 3px 10px; border-radius: 10px; }
+  .stage-move { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
+  .stage-btn { font-size: 11px; padding: 4px 10px; border-radius: 10px; border: 0.5px solid var(--border2); background: var(--bg2); color: var(--text2); cursor: pointer; font-family: inherit; transition: all .12s; }
+  .stage-btn:hover { background: var(--bg); color: var(--text); border-color: var(--text3); }
+  .tl { margin-top: 10px; border-top: 0.5px solid var(--border); padding-top: 10px; }
+  .tl-item { display: flex; gap: 8px; margin-bottom: 8px; }
+  .tl-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); margin-top: 4px; flex-shrink: 0; }
+  .tl-text { font-size: 11px; color: var(--text2); line-height: 1.5; }
+  .tl-text strong { color: var(--text); }
+
+  .empty-col { font-size: 11px; color: var(--text3); text-align: center; padding: 16px 0; }
+  
+  @media (max-width: 600px) {
+    .grid2 { grid-template-columns: 1fr; }
+    .detail-grid { grid-template-columns: 1fr; }
+    .modal-foot { flex-direction: column-reverse; }
+    .modal-foot .btn { width: 100%; justify-content: center; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <span class="brand">South Link <span>CRM</span></span>
+  <button class="btn btn-pri" onclick="openNew()"><i class="ti ti-plus"></i> Novo projeto</button>
+</header>
+
+<main>
+  <div class="filter-bar" id="filterBar"></div>
+  <div class="stats-row" id="statsRow"></div>
+  <div class="kanban" id="kanban"></div>
+</main>
+
+<div id="modalContainer"></div>
+
+<script>
+const REPS = [
+  {id:0, name:'Engesystems', short:'ENG'},
+  {id:1, name:'Zikoo Robotics', short:'ZKO'},
+  {id:2, name:'D-Lean Solutions', short:'DLS'},
+  {id:3, name:'Forte Indústria', short:'FOR'}
+];
+
+const STAGES = [
+  {id:'envio', label:'Envio à fábrica', color:'#1D9E75', alertDays:7, alertMsg:'Contatar fábrica'},
+  {id:'recebimento', label:'Recebido da fábrica', color:'#378ADD', alertDays:2, alertMsg:'Enviar ao cliente'},
+  {id:'cotacao', label:'Cotação enviada', color:'#BA7517', alertDays:7, alertMsg:'Cobrar resposta'},
+  {id:'fechado', label:'Pedido fechado', color:'#639922', alertDays:null},
+  {id:'perdido', label:'Pedido perdido', color:'#E24B4A', alertDays:null}
+];
+
+const MOTIVOS = [
+  'Preço acima do mercado',
+  'Prazo de entrega longo',
+  'Concorrente local',
+  'Projeto cancelado pelo cliente',
+  'Falta de orçamento',
+  'Especificação técnica não atendida',
+  'Outro'
+];
+
+const MESES = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+
+function loadData() {
+  try {
+    const d = localStorage.getItem('sl_crm');
+    if (d) return JSON.parse(d);
+  } catch(e) {}
+  return {
+    nextNum: 6,
+    projects: [
+      {id:'SL-2025-001', title:'Pick-to-light CD Curitiba', client:'Ambev Logística', repId:0, stage:'cotacao', value:380000, date:'2025-06-10', rev:1, notes:'Revisão de layout solicitada pelo cliente.', motivo:'', history:[{date:'2025-05-20',text:'Informações enviadas à Engesystems.'},{date:'2025-06-02',text:'Projeto e orçamento recebidos da fábrica.'},{date:'2025-06-10',text:'Cotação enviada ao cliente. Rev.1 — ajuste de capacidade.'}]},
+      {id:'SL-2025-002', title:'Shuttle 4-way CEVA Logistics', client:'CEVA Logistics', repId:1, stage:'recebimento', value:2100000, date:'2025-06-18', rev:0, notes:'RFQ 86.400 posições. Aguardando projeto técnico da Zikoo.', motivo:'', history:[{date:'2025-06-14',text:'Especificações do RFQ enviadas à Zikoo Robotics.'}]},
+      {id:'SL-2025-003', title:'Estrutura lean linha montagem', client:'WEG Equipamentos', repId:2, stage:'fechado', value:95000, date:'2025-06-05', rev:0, notes:'PO recebida e confirmada.', motivo:'', history:[{date:'2025-05-10',text:'Envio à D-Lean.'},{date:'2025-05-22',text:'Projeto recebido.'},{date:'2025-05-28',text:'Cotação enviada.'},{date:'2025-06-05',text:'Pedido fechado. PO recebida.'}]},
+      {id:'SL-2025-004', title:'Dock leveling 4 posições', client:'Privalia Distribuição', repId:3, stage:'envio', value:48000, date:'2025-06-20', rev:0, notes:'Levantamento feito. Informações encaminhadas à Forte.', motivo:'', history:[{date:'2025-06-20',text:'Abertura do projeto. Envio à Forte Indústria.'}]},
+      {id:'SL-2025-005', title:'Rack convencional CD expansão', client:'Mercado Livre', repId:0, stage:'perdido', value:210000, date:'2025-06-01', rev:0, notes:'', motivo:'Prazo de entrega longo', history:[{date:'2025-05-08',text:'Envio à Engesystems.'},{date:'2025-05-18',text:'Orçamento recebido.'},{date:'2025-05-25',text:'Cotação enviada.'},{date:'2025-06-01',text:'Perdido — cliente optou por prazo menor.'}]}
+    ]
+  };
+}
+
+function save() {
+  try { localStorage.setItem('sl_crm', JSON.stringify({nextNum: S.nextNum, projects: S.projects})); } catch(e) {}
+}
+
+let S = loadData();
+let UI = {repF:'all', mesF:'all', anoF:'all', modal:null, detailId:null, editId:null, form:{}};
+
+function daysSince(d) {
+  return Math.floor((new Date() - new Date(d)) / 86400000);
+}
+function alertLevel(p) {
+  const s = STAGES.find(x => x.id === p.stage);
+  if (!s || !s.alertDays) return null;
+  const d = daysSince(p.date);
+  if (d >= s.alertDays) return 'r';
+  if (d >= Math.floor(s.alertDays * 0.65)) return 'y';
+  return null;
+}
+function alertText(p) {
+  const s = STAGES.find(x => x.id === p.stage);
+  if (!s || !s.alertDays) return '';
+  return s.alertMsg + ' · ' + daysSince(p.date) + 'd';
+}
+function fv(v) { return v ? 'R$ ' + Number(v).toLocaleString('pt-BR') : '—'; }
+function fd(d) { if (!d) return '—'; const p = d.split('-'); return p[2]+'/'+p[1]+'/'+p[0]; }
+function today() { return new Date().toISOString().slice(0,10); }
+function genId() { const n = String(S.nextNum).padStart(3,'0'); S.nextNum++; return 'SL-'+ new Date().getFullYear() +'-'+n; }
+
+function getFiltered() {
+  return S.projects.filter(p => {
+    if (UI.repF !== 'all' && p.repId !== parseInt(UI.repF)) return false;
+    if (UI.anoF !== 'all' && (!p.date || !p.date.startsWith(UI.anoF))) return false;
+    if (UI.mesF !== 'all' && (!p.date || parseInt(p.date.split('-')[1]) !== parseInt(UI.mesF))) return false;
+    return true;
+  });
+}
+
+function getStats(ps) {
+  const em = ps.filter(p => !['fechado','perdido'].includes(p.stage)).length;
+  const fech = ps.filter(p => p.stage === 'fechado');
+  const vol = fech.reduce((a, p) => a + Number(p.value || 0), 0);
+  const taxa = ps.length ? Math.round(fech.length / ps.length * 100) : 0;
+  const al = ps.filter(p => alertLevel(p) === 'r').length;
+  return {total: ps.length, em, vol, taxa, al};
+}
+
+function availYears() {
+  return [...new Set(S.projects.map(p => p.date ? p.date.slice(0,4) : null).filter(Boolean))].sort().reverse();
+}
+
+function openNew() { UI.form = {repId:0, stage:'envio', date:today(), motivo:''}; UI.modal = 'new'; UI.editId = null; render(); }
+function openDetail(id) { UI.detailId = id; UI.modal = 'detail'; render(); }
+function openEdit(id) { const p = S.projects.find(x => x.id === id); if(!p) return; UI.form = {...p}; UI.editId = id; UI.modal = 'edit'; render(); }
+function closeModal() { UI.modal = null; UI.detailId = null; UI.editId = null; render(); }
+
+function saveNew() {
+  const id = genId();
+  S.projects.unshift({
+    id, title: UI.form.title || 'Sem título', client: UI.form.client || '',
+    repId: parseInt(UI.form.repId) || 0, stage: UI.form.stage || 'envio',
+    value: UI.form.value || 0, date: UI.form.date || today(),
+    rev: 0, notes: UI.form.notes || '', motivo: '',
+    history: [{date: UI.form.date || today(), text: 'Projeto criado e informações enviadas à fábrica.'}]
+  });
+  save(); closeModal();
+}
+
+function saveEdit() {
+  const idx = S.projects.findIndex(p => p.id === UI.editId);
+  if (idx < 0) return;
+  const old = S.projects[idx];
+  const nr = old.rev + 1;
+  S.projects[idx] = {
+    ...old, ...UI.form, id: old.id, rev: nr,
+    history: [...old.history, {date: today(), text: 'Rev.' + nr + ' — ' + (UI.form.notes || 'sem observação') + '.'}]
+  };
+  save(); closeModal();
+}
+
+function moveStage(pid, sid) {
+  const p = S.projects.find(x => x.id === pid);
+  if (!p) return;
+  const sl = STAGES.find(s => s.id === sid);
+  p.stage = sid;
+  p.date = today();
+  p.history.push({date: today(), text: 'Movido para: ' + sl.label + '.'});
+  save(); render();
+}
+
+function deleteProject(pid) {
+  if (!confirm('Excluir este projeto permanentemente?')) return;
+  S.projects = S.projects.filter(p => p.id !== pid);
+  save(); closeModal();
+}
+
+function esc(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function renderFilterBar() {
+  const years = availYears();
+  const repPills = REPS.map(r =>
+    `<button class="pill${UI.repF===String(r.id)?' on':''}" onclick="UI.repF='${r.id}';render()">${r.name}</button>`
+  ).join('');
+  const yOpts = years.map(y => `<option value="${y}"${UI.anoF===y?' selected':''}>${y}</option>`).join('');
+  const mOpts = MESES.map((m,i) => `<option value="${i+1}"${UI.mesF===String(i+1)?' selected':''}>${m}</option>`).join('');
+  document.getElementById('filterBar').innerHTML = `
+    <button class="pill${UI.repF==='all'?' on':''}" onclick="UI.repF='all';render()">Todas</button>
+    ${repPills}
+    <span class="sep">|</span>
+    <select onchange="UI.anoF=this.value;render()"><option value="all">Todos os anos</option>${yOpts}</select>
+    <select onchange="UI.mesF=this.value;render()"><option value="all">Todos os meses</option>${mOpts}</select>
+  `;
+}
+
+function renderStats(st) {
+  document.getElementById('statsRow').innerHTML = `
+    <div class="stat"><div class="stat-l">Projetos</div><div class="stat-v">${st.total}</div></div>
+    <div class="stat"><div class="stat-l">Em negociação</div><div class="stat-v">${st.em}</div></div>
+    <div class="stat"><div class="stat-l">Volume fechado</div><div class="stat-v" style="font-size:15px">${fv(st.vol)}</div></div>
+    <div class="stat"><div class="stat-l">Alertas ativos</div><div class="stat-v" style="color:${st.al>0?'var(--red)':'var(--text)'}">${st.al}</div></div>
+  `;
+}
+
+function renderKanban(ps) {
+  document.getElementById('kanban').innerHTML = STAGES.map(s => {
+    const cards = ps.filter(p => p.stage === s.id);
+    const ch = cards.length ? cards.map(p => {
+      const al = alertLevel(p);
+      const rep = REPS[p.repId];
+      return `<div class="card${al?' alert-'+al:''}" onclick="openDetail('${esc(p.id)}')">
+        <div class="card-top">
+          <span class="card-id">${esc(p.id)}${p.rev>0?`<span class="rev-b"><i class="ti ti-refresh" style="font-size:9px"></i>R${p.rev}</span>`:''}</span>
+          <span class="rep-b r${p.repId}">${rep.short}</span>
+        </div>
+        <div class="card-title">${esc(p.title)}</div>
+        <div class="card-client"><i class="ti ti-building" style="font-size:11px;margin-right:3px"></i>${esc(p.client)}</div>
+        ${al?`<div class="alert-chip ${al}"><i class="ti ti-bell" style="font-size:10px"></i>${esc(alertText(p))}</div>`:''}
+        <div class="card-foot" style="margin-top:5px">
+          <span class="card-val">${fv(p.value)}</span>
+          <span class="card-date">${fd(p.date)}</span>
+        </div>
+      </div>`;
+    }).join('') : `<div class="empty-col">Nenhum projeto</div>`;
+    return `<div class="col">
+      <div class="col-h">
+        <span class="col-title"><span class="col-dot" style="background:${s.color}"></span>${s.label}</span>
+        <span class="col-cnt">${cards.length}</span>
+      </div>${ch}
+    </div>`;
+  }).join('');
+}
+
+function renderModal() {
+  const mc = document.getElementById('modalContainer');
+
+  if (!UI.modal) { mc.innerHTML = ''; return; }
+
+  if (UI.modal === 'new' || UI.modal === 'edit') {
+    const isE = UI.modal === 'edit';
+    const isLost = UI.form.stage === 'perdido';
+    const mOpts = MOTIVOS.map(m => `<option value="${esc(m)}"${UI.form.motivo===m?' selected':''}>${esc(m)}</option>`).join('');
+    mc.innerHTML = `<div class="overlay" onclick="if(event.target===this)closeModal()">
+      <div class="modal">
+        <div class="modal-h">
+          <h2>${isE ? 'Editar / revisar projeto' : 'Novo projeto'}</h2>
+          <button class="close-btn" onclick="closeModal()">×</button>
+        </div>
+        <div class="grid2">
+          <div class="fg full"><label>Título do projeto</label><input id="f-title" placeholder="Ex: Sistema de armazenagem CD SP" value="${esc(UI.form.title||'')}"></div>
+          <div class="fg"><label>Cliente / Prospecto</label><input id="f-client" placeholder="Nome da empresa" value="${esc(UI.form.client||'')}"></div>
+          <div class="fg"><label>Representada</label><select id="f-rep">${REPS.map(r=>`<option value="${r.id}"${UI.form.repId==r.id?' selected':''}>${r.name}</option>`).join('')}</select></div>
+          <div class="fg"><label>Etapa atual</label><select id="f-stage" onchange="UI.form.stage=this.value;renderModal()">${STAGES.map(s=>`<option value="${s.id}"${UI.form.stage===s.id?' selected':''}>${s.label}</option>`).join('')}</select></div>
+          <div class="fg"><label>Valor estimado (R$)</label><input id="f-value" type="number" placeholder="0" value="${esc(UI.form.value||'')}"></div>
+          <div class="fg full"><label>Observações</label><textarea id="f-notes" placeholder="Detalhes, condições especiais, contexto...">${esc(UI.form.notes||'')}</textarea></div>
+          ${isLost ? `<div class="fg full"><label>Motivo da perda</label><select id="f-motivo"><option value="">Selecione o motivo...</option>${mOpts}</select></div>` : ''}
+        </div>
+        <div class="modal-foot">
+          <button class="btn" onclick="closeModal()">Cancelar</button>
+          <button class="btn btn-pri" onclick="${isE?'saveEdit()':'saveNew()'}"><i class="ti ti-check"></i> ${isE?'Salvar revisão':'Criar projeto'}</button>
+        </div>
+      </div>
+    </div>`;
+    setTimeout(() => {
+      const bind = (id, key) => { const el=document.getElementById(id); if(el){el.oninput=e=>{UI.form[key]=e.target.value};el.onchange=e=>{UI.form[key]=e.target.value};} };
+      bind('f-title','title'); bind('f-client','client'); bind('f-value','value'); bind('f-notes','notes');
+      const rs = document.getElementById('f-rep'); if(rs){rs.onchange=e=>{UI.form.repId=parseInt(e.target.value)};}
+      const fm = document.getElementById('f-motivo'); if(fm){fm.onchange=e=>{UI.form.motivo=e.target.value};}
+    }, 0);
+    return;
+  }
+
+  if (UI.modal === 'detail' && UI.detailId) {
+    const p = S.projects.find(x => x.id === UI.detailId);
+    if (!p) { mc.innerHTML=''; return; }
+    const rep = REPS[p.repId];
+    const sl = STAGES.find(s => s.id === p.stage);
+    const al = alertLevel(p);
+    const others = STAGES.filter(s => s.id !== p.stage);
+    const hist = p.history.slice().reverse().map(h =>
+      `<div class="tl-item"><div class="tl-dot"></div><div class="tl-text"><strong>${fd(h.date)}</strong> — ${esc(h.text)}</div></div>`
+    ).join('');
+    const alertBox = al ? `<div class="alert-box ${al}"><i class="ti ti-bell" style="font-size:16px;flex-shrink:0"></i><div><strong>${al==='r'?'Ação necessária':'Atenção'}</strong>${esc(alertText(p))}</div></div>` : '';
+    const motivoBox = p.stage==='perdido'&&p.motivo ? `<div class="sec-lbl">Motivo da perda</div><div class="motivo-box"><i class="ti ti-x"></i> ${esc(p.motivo)}</div>` : '';
+    mc.innerHTML = `<div class="overlay" onclick="if(event.target===this)closeModal()">
+      <div class="modal">
+        <div class="modal-h">
+          <div>
+            <div style="font-size:10px;color:var(--text3);font-family:monospace;margin-bottom:3px">${esc(p.id)}${p.rev>0?' · Rev.'+p.rev:''}</div>
+            <h2>${esc(p.title)}</h2>
+          </div>
+          <button class="close-btn" onclick="closeModal()">×</button>
+        </div>
+        ${alertBox}
+        <div class="badge-row">
+          <span class="badge rep-b r${p.repId}" style="font-size:12px;padding:4px 10px">${rep.name}</span>
+          <span class="badge" style="background:var(--bg2);color:var(--text2);border:0.5px solid var(--border);font-size:12px;padding:4px 10px">${sl.label}</span>
+        </div>
+        <div class="detail-grid">
+          <div class="di"><div class="dl">Cliente</div><div class="dv">${esc(p.client)||'—'}</div></div>
+          <div class="di"><div class="dl">Valor estimado</div><div class="dv">${fv(p.value)}</div></div>
+          <div class="di"><div class="dl">Última atualização</div><div class="dv">${fd(p.date)}</div></div>
+          <div class="di"><div class="dl">Revisões</div><div class="dv">${p.rev===0?'Original':p.rev+' revisão(ões)'}</div></div>
+        </div>
+        ${p.notes ? `<div class="notes-box">${esc(p.notes)}</div>` : ''}
+        ${motivoBox}
+        <div class="sec-lbl">Mover para outra etapa</div>
+        <div class="stage-move">${others.map(s=>`<button class="stage-btn" onclick="moveStage('${esc(p.id)}','${s.id}');closeModal()">${s.label}</button>`).join('')}</div>
+        <div class="tl"><div class="sec-lbl">Histórico</div>${hist}</div>
+        <div class="modal-foot">
+          <button class="btn btn-danger btn-sm" onclick="deleteProject('${esc(p.id)}')"><i class="ti ti-trash"></i> Excluir</button>
+          <button class="btn btn-sm" onclick="closeModal()">Fechar</button>
+          <button class="btn btn-pri btn-sm" onclick="openEdit('${esc(p.id)}')"><i class="ti ti-edit"></i> Editar / Revisar</button>
+        </div>
+      </div>
+    </div>`;
+  }
+}
+
+function render() {
+  const ps = getFiltered();
+  const st = getStats(ps);
+  renderFilterBar();
+  renderStats(st);
+  renderKanban(ps);
+  renderModal();
+}
+
+document.addEventListener('keydown', e => { if(e.key==='Escape') closeModal(); });
+render();
+</script>
+</body>
+</html>
