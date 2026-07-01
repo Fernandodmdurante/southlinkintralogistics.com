@@ -321,7 +321,7 @@ function closeModal(){UI.modal=null;UI.detailId=null;UI.editId=null;render();}
 
 async function saveNew(){
   const id=genId();
-  const p={id,title:UI.form.title||'Sem título',client:UI.form.client||'',cnpj:UI.form.cnpj||'',contato:UI.form.contato||'',email:UI.form.email||'',fone:UI.form.fone||'',cidade:UI.form.cidade||'',estado:UI.form.estado||'',pais:UI.form.pais||'Brasil',responsavel:UI.form.responsavel||'',deadline:UI.form.deadline||'',repId:parseInt(UI.form.repId)||0,stage:UI.form.stage||'envio',value:UI.form.value||0,date:UI.form.date||today(),rev:0,notes:UI.form.notes||'',motivo:'',history:[{date:UI.form.date||today(),text:'Projeto criado. Informações enviadas à fábrica.'}]};
+  const p={id,title:UI.form.title||'Sem título',client:UI.form.client||'',cnpj:UI.form.cnpj||'',contato:UI.form.contato||'',email:UI.form.email||'',fone:UI.form.fone||'',cidade:UI.form.cidade||'',estado:UI.form.estado||'',pais:UI.form.pais||'Brasil',responsavel:UI.form.responsavel||'',deadline:UI.form.deadline||'',repId:parseInt(UI.form.repId)||0,stage:UI.form.stage||'envio',value:UI.form.value||0,date:UI.form.date||today(),rev:0,notes:UI.form.notes||'',motivo:'',incoterm:UI.form.incoterm||'',pagamento:UI.form.pagamento||'',comissao:UI.form.comissao||'',projetoComercial:UI.form.projetoComercial||'NAO',history:[{date:UI.form.date||today(),text:'Projeto criado. Informações enviadas à fábrica.'}]};
   S.projects.unshift(p);saveLocal();closeModal();
   await pushProjectToSheets(p);showToast('Projeto salvo');
 }
@@ -424,6 +424,13 @@ function renderModal(){
         <div class="fg"><label>Cidade</label><input id="f-cidade" value="${esc(UI.form.cidade||'')}"></div>
         <div class="fg"><label>Estado</label><select id="f-estado"><option value="">Selecione</option>${estadoOpts}</select></div>
       </div>
+      <div class="section-title"><i class="ti ti-chart-bar" style="font-size:12px;margin-right:4px"></i>Dados comerciais</div>
+      <div class="grid2">
+        <div class="fg"><label>Incoterm</label><select id="f-incoterm"><option value="">Selecione</option><option value="FOB"${UI.form.incoterm==='FOB'?' selected':''}>FOB</option><option value="CIF"${UI.form.incoterm==='CIF'?' selected':''}>CIF</option><option value="OUTRO"${UI.form.incoterm==='OUTRO'?' selected':''}>OUTRO</option></select></div>
+        <div class="fg"><label>Condição de pagamento</label><input id="f-pagamento" placeholder="Ex: 30/60/90 dias" value="${esc(UI.form.pagamento||'')}"></div>
+        <div class="fg"><label>Comissão South Link</label><select id="f-comissao"><option value="">Selecione</option>${[0,1,2,3,4,5].map(n=>`<option value="${n}"${UI.form.comissao==n?' selected':''}>${n}%</option>`).join('')}</select></div>
+        <div class="fg"><label>Projeto comercial</label><select id="f-projetoComercial"><option value="NAO"${(UI.form.projetoComercial||'NAO')==='NAO'?' selected':''}>Não</option><option value="SIM"${UI.form.projetoComercial==='SIM'?' selected':''}>Sim</option></select></div>
+      </div>
       <div class="section-title"><i class="ti ti-notes" style="font-size:12px;margin-right:4px"></i>Observações</div>
       <div class="fg"><textarea id="f-notes">${esc(UI.form.notes||'')}</textarea></div>
       ${isLost?`<div class="fg"><label>Motivo da perda</label><select id="f-motivo"><option value="">Selecione...</option>${mOpts}</select></div>`:''}
@@ -434,11 +441,14 @@ function renderModal(){
     </div></div>`;
     setTimeout(()=>{
       const b=(id,key)=>{const el=document.getElementById(id);if(el){el.oninput=e=>{UI.form[key]=e.target.value;};el.onchange=e=>{UI.form[key]=e.target.value;};}};
-      b('f-title','title');b('f-client','client');b('f-cnpj','cnpj');b('f-contato','contato');b('f-email','email');b('f-fone','fone');b('f-cidade','cidade');b('f-pais','pais');b('f-value','value');b('f-notes','notes');b('f-resp','responsavel');
+      b('f-title','title');b('f-client','client');b('f-cnpj','cnpj');b('f-contato','contato');b('f-email','email');b('f-fone','fone');b('f-cidade','cidade');b('f-pais','pais');b('f-value','value');b('f-notes','notes');b('f-resp','responsavel');b('f-pagamento','pagamento');
       const dl=document.getElementById('f-deadline');if(dl)dl.onchange=e=>{UI.form.deadline=e.target.value;renderModal();};
       const rs=document.getElementById('f-rep');if(rs)rs.onchange=e=>{UI.form.repId=parseInt(e.target.value);};
       const es=document.getElementById('f-estado');if(es){es.value=UI.form.estado||'';es.onchange=e=>{UI.form.estado=e.target.value;};}
       const fm=document.getElementById('f-motivo');if(fm){fm.value=UI.form.motivo||'';fm.onchange=e=>{UI.form.motivo=e.target.value;};}
+      const fi=document.getElementById('f-incoterm');if(fi){fi.value=UI.form.incoterm||'';fi.onchange=e=>{UI.form.incoterm=e.target.value;};}
+      const fc=document.getElementById('f-comissao');if(fc){fc.value=UI.form.comissao||'';fc.onchange=e=>{UI.form.comissao=e.target.value;};}
+      const fp=document.getElementById('f-projetoComercial');if(fp){fp.value=UI.form.projetoComercial||'NAO';fp.onchange=e=>{UI.form.projetoComercial=e.target.value;};}
     },0);
     return;
   }
@@ -480,6 +490,14 @@ function renderModal(){
       </div>
       ${p.notes?`<div class="sec-lbl">Observações</div><div class="notes-box">${esc(p.notes)}</div>`:''}
       ${p.stage==='perdido'&&p.motivo?`<div class="sec-lbl">Motivo da perda</div><div class="motivo-box"><i class="ti ti-x"></i> ${esc(p.motivo)}</div>`:''}
+      ${(p.incoterm||p.pagamento||p.comissao||p.projetoComercial)?`
+      <div class="sec-lbl">Dados comerciais</div>
+      <div class="contact-card">
+        ${p.incoterm?`<div class="contact-item"><div class="cl">Incoterm</div><div class="cv">${esc(p.incoterm)}</div></div>`:''}
+        ${p.pagamento?`<div class="contact-item"><div class="cl">Condição de pagamento</div><div class="cv">${esc(p.pagamento)}</div></div>`:''}
+        ${p.comissao?`<div class="contact-item"><div class="cl">Comissão South Link</div><div class="cv">${esc(p.comissao)}%</div></div>`:''}
+        <div class="contact-item"><div class="cl">Projeto comercial</div><div class="cv" style="color:${p.projetoComercial==='SIM'?'var(--green-dark)':'var(--text2)'}">${p.projetoComercial==='SIM'?'✓ Sim':'✗ Não'}</div></div>
+      </div>`:''}
       <div class="sec-lbl">Mover para outra etapa</div>
       <div class="stage-move">${others.map(s=>`<button class="stage-btn" onclick="moveStage('${esc(p.id)}','${s.id}');closeModal()">${s.label}</button>`).join('')}</div>
       <div class="tl"><div class="sec-lbl">Histórico</div>${hist}</div>
