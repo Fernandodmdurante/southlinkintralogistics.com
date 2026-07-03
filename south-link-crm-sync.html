@@ -247,24 +247,29 @@ async function fetchFromSheets(){
 }
 
 async function pushAllSilent(){
-  if(S.projects.length===0)return;
-  const data=encodeURIComponent(JSON.stringify(S.projects));
-  const url=SCRIPT_URL+'?action=saveAll&data='+data;
-  try{await fetch(url,{method:'GET',mode:'no-cors'});}catch(e){}
+  // Send one by one to avoid URL length limit
+  for(const p of S.projects){
+    await pushProjectToSheets(p);
+  }
 }
 
-// Push all projects via URL navigation (bypasses CORS entirely)
-function pushAllToSheets(){
+// Push all projects one by one (avoids URL length limit of GET requests)
+async function pushAllToSheets(){
   if(S.projects.length===0){showToast('Nenhum projeto para enviar');return;}
-  const data=encodeURIComponent(JSON.stringify(S.projects));
-  const url=SCRIPT_URL+'?action=saveAll&data='+data;
-  // Open in new tab — user sees confirmation from Apps Script, then closes
-  const w=window.open(url,'_blank','width=600,height=400');
-  showToast('Enviando para Sheets...',4000);
-  setTimeout(()=>{
-    if(w&&!w.closed)w.close();
-    setSyncStatus('ok','Enviado');showToast('Dados enviados! Atualize o celular.');
-  },4000);
+  showToast('Enviando '+S.projects.length+' projetos...',8000);
+  setSyncStatus('loading','Enviando...');
+  let ok=0;
+  for(const p of S.projects){
+    try{
+      const data=encodeURIComponent(JSON.stringify(p));
+      const url=SCRIPT_URL+'?action=save&data='+data;
+      await fetch(url,{method:'GET',mode:'no-cors'});
+      ok++;
+    }catch(e){}
+    await new Promise(r=>setTimeout(r,300)); // small delay between requests
+  }
+  setSyncStatus('ok','Enviado');
+  showToast(ok+' projetos enviados! Atualize o celular.',3000);
 }
 
 async function pushProjectToSheets(project){
