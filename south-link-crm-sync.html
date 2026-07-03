@@ -221,18 +221,36 @@ async function fetchFromSheets(){
     if(!res.ok)throw new Error('HTTP '+res.status);
     const data=await res.json();
     if(data.projects&&Array.isArray(data.projects)){
-      if(data.projects.length>0){
+      if(data.projects.length>S.projects.length){
+        // Sheets has more — update local
         S.projects=data.projects;
         const maxNum=data.projects.reduce((m,p)=>{const n=parseInt((p.id||'').split('-').pop()||'0');return n>m?n:m;},S.nextNum-1);
         S.nextNum=maxNum+1;
+        saveLocal();
+      } else if(data.projects.length<S.projects.length){
+        // Local has more — push all to Sheets silently
+        pushAllSilent();
+      } else if(data.projects.length>0){
+        // Same count — use Sheets version (more up to date)
+        S.projects=data.projects;
+        const maxNum=data.projects.reduce((m,p)=>{const n=parseInt((p.id||'').split('-').pop()||'0');return n>m?n:m;},S.nextNum-1);
+        S.nextNum=maxNum+1;
+        saveLocal();
       }
-      saveLocal();setSyncStatus('ok','Sincronizado');return true;
+      setSyncStatus('ok','Sincronizado');return true;
     }
     throw new Error('Resposta inválida');
   }catch(e){
-    setSyncStatus('err','Erro — use o botão Enviar');
+    setSyncStatus('err','Erro de conexão');
     console.warn('Sync error:',e);return false;
   }
+}
+
+async function pushAllSilent(){
+  if(S.projects.length===0)return;
+  const data=encodeURIComponent(JSON.stringify(S.projects));
+  const url=SCRIPT_URL+'?action=saveAll&data='+data;
+  try{await fetch(url,{method:'GET',mode:'no-cors'});}catch(e){}
 }
 
 // Push all projects via URL navigation (bypasses CORS entirely)
