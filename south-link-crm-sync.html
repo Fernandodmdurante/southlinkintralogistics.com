@@ -212,7 +212,26 @@ function showToast(text,duration=2500){
   setTimeout(()=>t.classList.add('hidden'),duration);
 }
 
-// ── Sync via script URL with no-cors fetch ──
+// ── Sync ──
+// Merge logic: combine local and sheets, keeping newest version of each project by updatedAt
+function mergeProjects(local, sheets){
+  const map = {};
+  // Add all local projects
+  for(const p of local) map[p.id] = p;
+  // Override with sheets version only if sheets version is newer
+  for(const p of sheets){
+    if(!map[p.id]){
+      map[p.id] = p; // new from sheets
+    } else {
+      const localDate = map[p.id].updatedAt || map[p.id].date || '';
+      const sheetsDate = p.updatedAt || p.date || '';
+      if(sheetsDate > localDate) map[p.id] = p;
+    }
+  }
+  // Sort by id descending
+  return Object.values(map).sort((a,b)=>b.id.localeCompare(a.id));
+}
+
 async function fetchFromSheets(){
   setSyncStatus('loading','Buscando...');
   try{
@@ -221,71 +240,67 @@ async function fetchFromSheets(){
     if(!res.ok)throw new Error('HTTP '+res.status);
     const data=await res.json();
     if(data.projects&&Array.isArray(data.projects)){
-      if(data.projects.length>S.projects.length){
-        // Sheets has more — update local
-        S.projects=data.projects;
-        const maxNum=data.projects.reduce((m,p)=>{const n=parseInt((p.id||'').split('-').pop()||'0');return n>m?n:m;},S.nextNum-1);
-        S.nextNum=maxNum+1;
-        saveLocal();
-      } else if(data.projects.length<S.projects.length){
-        // Local has more — push all to Sheets silently
-        pushAllSilent();
-      } else if(data.projects.length>0){
-        // Same count — use Sheets version (more up to date)
-        S.projects=data.projects;
-        const maxNum=data.projects.reduce((m,p)=>{const n=parseInt((p.id||'').split('-').pop()||'0');return n>m?n:m;},S.nextNum-1);
-        S.nextNum=maxNum+1;
-        saveLocal();
-      }
-      setSyncStatus('ok','Sincronizado');return true;
+      // Merge sheets data with local — never lose local projects
+      const merged = mergeProjects(S.projects, data.projects);
+      S.projects = merged;
+      const maxNum=merged.reduce((m,p)=>{const n=parseInt((p.id||'').split('-').pop()||'0');return n>m?n:m;},S.nextNum-1);
+      S.nextNum=maxNum+1;
+      saveLocal();
+      setSyncStatus('ok','Sincronizado');
+      return true;
     }
     throw new Error('Resposta inválida');
   }catch(e){
     setSyncStatus('err','Erro de conexão');
-    console.warn('Sync error:',e);return false;
+    console.warn('Sync error:',e);
+    return false;
   }
 }
 
-async function pushAllSilent(){
-  // Send one by one to avoid URL length limit
-  for(const p of S.projects){
-    await pushProjectToSheets(p);
-  }
-}
-
-// Push all projects one by one (avoids URL length limit of GET requests)
+// Push all via opening new tab (works on github.io domain, bypasses CORS)
 async function pushAllToSheets(){
   if(S.projects.length===0){showToast('Nenhum projeto para enviar');return;}
-  showToast('Enviando '+S.projects.length+' projetos...',8000);
   setSyncStatus('loading','Enviando...');
-  let ok=0;
+  showToast('Enviando projetos...',8000);
+  // Try one by one with no-cors (works on github.io)
+  let sent=0;
   for(const p of S.projects){
     try{
+      // Tag with updatedAt so merge works correctly
+      if(!p.updatedAt) p.updatedAt = new Date().toISOString();
       const data=encodeURIComponent(JSON.stringify(p));
       const url=SCRIPT_URL+'?action=save&data='+data;
       await fetch(url,{method:'GET',mode:'no-cors'});
-      ok++;
+      sent++;
     }catch(e){}
-    await new Promise(r=>setTimeout(r,300)); // small delay between requests
+    await new Promise(r=>setTimeout(r,200));
   }
+  saveLocal();
   setSyncStatus('ok','Enviado');
-  showToast(ok+' projetos enviados! Atualize o celular.',3000);
+  showToast(sent+' projetos enviados! Atualize o celular.',3000);
 }
 
 async function pushProjectToSheets(project){
-  const data=encodeURIComponent(JSON.stringify(project));
-  const url=SCRIPT_URL+'?action=save&data='+data;
   try{
+    if(!project.updatedAt) project.updatedAt = new Date().toISOString();
+    const data=encodeURIComponent(JSON.stringify(project));
+    const url=SCRIPT_URL+'?action=save&data='+data;
     await fetch(url,{method:'GET',mode:'no-cors'});
   }catch(e){}
 }
 
 async function deleteFromSheets(id){
-  const url=SCRIPT_URL+'?action=delete&id='+encodeURIComponent(id);
-  try{await fetch(url,{method:'GET',mode:'no-cors'});}catch(e){}
+  try{
+    const url=SCRIPT_URL+'?action=delete&id='+encodeURIComponent(id);
+    await fetch(url,{method:'GET',mode:'no-cors'});
+  }catch(e){}
 }
 
-async function syncNow(){setSyncStatus('loading','Buscando...');const ok=await fetchFromSheets();if(ok)render();}
+async function syncNow(){
+  setSyncStatus('loading','Buscando...');
+  const ok=await fetchFromSheets();
+  if(ok)render();
+}
 
 function saveScriptUrl(){
   const val=document.getElementById('scriptUrlInput').value.trim();
@@ -344,21 +359,23 @@ function closeModal(){UI.modal=null;UI.detailId=null;UI.editId=null;render();}
 
 async function saveNew(){
   const id=genId();
-  const p={id,title:UI.form.title||'Sem título',client:UI.form.client||'',cnpj:UI.form.cnpj||'',contato:UI.form.contato||'',email:UI.form.email||'',fone:UI.form.fone||'',cidade:UI.form.cidade||'',estado:UI.form.estado||'',pais:UI.form.pais||'Brasil',responsavel:UI.form.responsavel||'',deadline:UI.form.deadline||'',repId:parseInt(UI.form.repId)||0,stage:UI.form.stage||'envio',value:UI.form.value||0,date:UI.form.date||today(),rev:0,notes:UI.form.notes||'',motivo:'',incoterm:UI.form.incoterm||'',pagamento:UI.form.pagamento||'',comissao:UI.form.comissao||'',projetoComercial:UI.form.projetoComercial||'NAO',history:[{date:UI.form.date||today(),text:'Projeto criado. Informações enviadas à fábrica.'}]};
+  const now=new Date().toISOString();
+  const p={id,title:UI.form.title||'Sem título',client:UI.form.client||'',cnpj:UI.form.cnpj||'',contato:UI.form.contato||'',email:UI.form.email||'',fone:UI.form.fone||'',cidade:UI.form.cidade||'',estado:UI.form.estado||'',pais:UI.form.pais||'Brasil',responsavel:UI.form.responsavel||'',deadline:UI.form.deadline||'',repId:parseInt(UI.form.repId)||0,stage:UI.form.stage||'envio',value:UI.form.value||0,date:UI.form.date||today(),rev:0,notes:UI.form.notes||'',motivo:'',incoterm:UI.form.incoterm||'',pagamento:UI.form.pagamento||'',comissao:UI.form.comissao||'',projetoComercial:UI.form.projetoComercial||'NAO',updatedAt:now,history:[{date:UI.form.date||today(),text:'Projeto criado. Informações enviadas à fábrica.'}]};
   S.projects.unshift(p);saveLocal();closeModal();
   await pushProjectToSheets(p);showToast('Projeto salvo');
 }
 async function saveEdit(){
   const idx=S.projects.findIndex(p=>p.id===UI.editId);if(idx<0)return;
   const old=S.projects[idx];const nr=old.rev+1;
-  const updated={...old,...UI.form,id:old.id,rev:nr,history:[...old.history,{date:today(),text:'Rev.'+nr+' — '+(UI.form.notes||'sem observação')+'.'}]};
+  const updated={...old,...UI.form,id:old.id,rev:nr,updatedAt:new Date().toISOString(),history:[...old.history,{date:today(),text:'Rev.'+nr+' — '+(UI.form.notes||'sem observação')+'.'}]};
   S.projects[idx]=updated;saveLocal();closeModal();
   await pushProjectToSheets(updated);showToast('Projeto atualizado');
 }
 async function moveStage(pid,sid){
   const p=S.projects.find(x=>x.id===pid);if(!p)return;
   const sl=STAGES.find(s=>s.id===sid);
-  p.stage=sid;p.date=today();p.history.push({date:today(),text:'Movido para: '+sl.label+'.'});
+  p.stage=sid;p.date=today();p.updatedAt=new Date().toISOString();
+  p.history.push({date:today(),text:'Movido para: '+sl.label+'.'});
   saveLocal();render();await pushProjectToSheets(p);showToast('Etapa atualizada');
 }
 async function deleteProject(pid){
