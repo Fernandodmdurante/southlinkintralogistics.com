@@ -213,23 +213,26 @@ function showToast(text,duration=2500){
 }
 
 // ── Sync ──
-// Merge logic: combine local and sheets, keeping newest version of each project by updatedAt
+// Safe merge: never overwrite a local project with an older/empty sheets version
 function mergeProjects(local, sheets){
   const map = {};
-  // Add all local projects
-  for(const p of local) map[p.id] = p;
-  // Override with sheets version only if sheets version is newer
+  for(const p of local){
+    if(p.id && p.title) map[p.id] = {...p}; // only keep valid local projects
+  }
   for(const p of sheets){
+    if(!p.id || !p.title) continue; // skip empty/invalid sheets rows
     if(!map[p.id]){
-      map[p.id] = p; // new from sheets
+      map[p.id] = p; // new project from sheets not in local
     } else {
-      const localDate = map[p.id].updatedAt || map[p.id].date || '';
-      const sheetsDate = p.updatedAt || p.date || '';
-      if(sheetsDate > localDate) map[p.id] = p;
+      // Only override local if sheets version is strictly newer AND has valid data
+      const localTs = map[p.id].updatedAt || '0';
+      const sheetsTs = p.updatedAt || '0';
+      if(sheetsTs > localTs && p.title && p.stage){
+        map[p.id] = p;
+      }
     }
   }
-  // Sort by id descending
-  return Object.values(map).sort((a,b)=>b.id.localeCompare(a.id));
+  return Object.values(map).sort((a,b)=>(b.id||'').localeCompare(a.id||''));
 }
 
 async function fetchFromSheets(){
@@ -240,40 +243,38 @@ async function fetchFromSheets(){
     if(!res.ok)throw new Error('HTTP '+res.status);
     const data=await res.json();
     if(data.projects&&Array.isArray(data.projects)){
-      // Merge sheets data with local — never lose local projects
-      const merged = mergeProjects(S.projects, data.projects);
-      S.projects = merged;
-      const maxNum=merged.reduce((m,p)=>{const n=parseInt((p.id||'').split('-').pop()||'0');return n>m?n:m;},S.nextNum-1);
-      S.nextNum=maxNum+1;
-      saveLocal();
+      const merged=mergeProjects(S.projects, data.projects);
+      // Safety check: never reduce project count from merge
+      if(merged.length>=S.projects.length){
+        S.projects=merged;
+        const maxNum=merged.reduce((m,p)=>{const n=parseInt((p.id||'').split('-').pop()||'0');return n>m?n:m;},S.nextNum-1);
+        S.nextNum=maxNum+1;
+        saveLocal();
+      }
       setSyncStatus('ok','Sincronizado');
       return true;
     }
     throw new Error('Resposta inválida');
   }catch(e){
     setSyncStatus('err','Erro de conexão');
-    console.warn('Sync error:',e);
     return false;
   }
 }
 
-// Push all via opening new tab (works on github.io domain, bypasses CORS)
 async function pushAllToSheets(){
   if(S.projects.length===0){showToast('Nenhum projeto para enviar');return;}
   setSyncStatus('loading','Enviando...');
-  showToast('Enviando projetos...',8000);
-  // Try one by one with no-cors (works on github.io)
+  showToast('Enviando '+S.projects.length+' projetos...',8000);
   let sent=0;
   for(const p of S.projects){
     try{
-      // Tag with updatedAt so merge works correctly
-      if(!p.updatedAt) p.updatedAt = new Date().toISOString();
+      if(!p.updatedAt)p.updatedAt=new Date().toISOString();
       const data=encodeURIComponent(JSON.stringify(p));
       const url=SCRIPT_URL+'?action=save&data='+data;
       await fetch(url,{method:'GET',mode:'no-cors'});
       sent++;
     }catch(e){}
-    await new Promise(r=>setTimeout(r,200));
+    await new Promise(r=>setTimeout(r,300));
   }
   saveLocal();
   setSyncStatus('ok','Enviado');
@@ -282,7 +283,7 @@ async function pushAllToSheets(){
 
 async function pushProjectToSheets(project){
   try{
-    if(!project.updatedAt) project.updatedAt = new Date().toISOString();
+    if(!project.updatedAt)project.updatedAt=new Date().toISOString();
     const data=encodeURIComponent(JSON.stringify(project));
     const url=SCRIPT_URL+'?action=save&data='+data;
     await fetch(url,{method:'GET',mode:'no-cors'});
@@ -558,9 +559,14 @@ async function init(){
   loadLocal();
   document.getElementById('setupBanner').classList.add('hidden');
   render();
+  // Initial fetch from sheets on load
   const ok=await fetchFromSheets();
   if(ok)render();
-  setInterval(async()=>{const ok=await fetchFromSheets();if(ok)render();},60000);
+  // Auto-sync every 5 minutes — safe merge never reduces project count
+  window._syncInterval=setInterval(async()=>{
+    const ok=await fetchFromSheets();
+    if(ok)render();
+  },300000);
 }
 
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
