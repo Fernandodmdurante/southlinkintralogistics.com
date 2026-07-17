@@ -83,7 +83,7 @@
   .r0{background:var(--green-bg);color:var(--green-dark)}
   .r1{background:var(--blue-bg);color:var(--blue-dark)}
   .r2{background:var(--amber-bg);color:var(--amber-dark)}
-  .r3{background:#FBEAF0;color:#72243E}
+  .r3{background:#FBEAF0;color:#72243E}.r4{background:#EDE9FE;color:#4C1D95}
   .card-title{font-size:12px;font-weight:500;color:var(--text);margin-bottom:3px;line-height:1.35}
   .card-client{font-size:11px;color:var(--text2);margin-bottom:4px}
   .card-contact{font-size:10px;color:var(--text3);margin-bottom:4px}
@@ -184,7 +184,7 @@
 <script>
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwZCTSXSnx-zqVyKipRW8n9JFB-CurdD_sfTOKk7_u6SQCvyCsE0ZSnEveCOOMOU9-Q/exec';
 
-const REPS=[{id:0,name:'Engesystems',short:'ENG'},{id:1,name:'Zikoo Robotics',short:'ZKO'},{id:2,name:'D-Lean Solutions',short:'DLS'},{id:3,name:'Forte Indústria',short:'FOR'}];
+const REPS=[{id:0,name:'Engesystems',short:'ENG'},{id:1,name:'Zikoo Robotics',short:'ZKO'},{id:2,name:'D-Lean Solutions',short:'DLS'},{id:3,name:'Forte Indústria',short:'FOR'},{id:4,name:'ZS Robotics',short:'ZSR'}];
 const STAGES=[
   {id:'envio',label:'Envio à fábrica',color:'#1D9E75',alertDays:7,alertMsg:'Contatar fábrica'},
   {id:'recebimento',label:'Recebido da fábrica',color:'#378ADD',alertDays:2,alertMsg:'Enviar ao cliente'},
@@ -194,6 +194,7 @@ const STAGES=[
 ];
 const MOTIVOS=['Preço acima do mercado','Prazo de entrega longo','Concorrente local','Projeto cancelado pelo cliente','Falta de orçamento','Especificação técnica não atendida','Outro'];
 const MESES=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+const RESPONSAVEIS=['Eduardo Stinghen','Erland Fernandez','Fernando','José Uliambre','Nelson Campos','Rafael','Francisco Pino','Martin Valdovinos','Alejandro Uranel','Ricardo Tempesta','Outros'];
 const ESTADOS=['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'];
 
 let S={nextNum:6,projects:[]};
@@ -432,7 +433,9 @@ function renderKanban(ps){
         <div class="card-foot"><span class="card-val">${fv(p.value)}</span><span class="card-date">${p.deadline?'<i class="ti ti-calendar-due" style="font-size:10px;margin-right:2px"></i>'+fd(p.deadline):fd(p.date)}</span></div>
       </div>`;
     }).join(''):`<div class="empty-col">Nenhum projeto</div>`;
-    return`<div class="col"><div class="col-h"><span class="col-title"><span class="col-dot" style="background:${s.color}"></span>${s.label}</span><span class="col-cnt">${cards.length}</span></div>${ch}</div>`;
+    const colTotal=s.id!=='envio'?cards.reduce((a,p)=>a+Number(p.value||0),0):null;
+    const totalHtml=colTotal>0?`<div style="font-size:11px;color:var(--text2);text-align:right;padding:4px 2px 6px;border-bottom:0.5px solid var(--border);margin-bottom:6px">${fv(colTotal)}</div>`:'';
+    return`<div class="col"><div class="col-h"><span class="col-title"><span class="col-dot" style="background:${s.color}"></span>${s.label}</span><span class="col-cnt">${cards.length}</span></div>${totalHtml}${ch}</div>`;
   }).join('');
 }
 function renderModal(){
@@ -451,7 +454,7 @@ function renderModal(){
         <div class="fg"><label>Representada</label><select id="f-rep">${REPS.map(r=>`<option value="${r.id}"${UI.form.repId==r.id?' selected':''}>${r.name}</option>`).join('')}</select></div>
         <div class="fg"><label>Etapa</label><select id="f-stage" onchange="UI.form.stage=this.value;renderModal()">${STAGES.map(s=>`<option value="${s.id}"${UI.form.stage===s.id?' selected':''}>${s.label}</option>`).join('')}</select></div>
         <div class="fg"><label>Valor estimado (R$)</label><input id="f-value" type="number" value="${esc(UI.form.value||'')}"></div>
-        <div class="fg"><label>Responsável South Link</label><input id="f-resp" value="${esc(UI.form.responsavel||'')}"></div>
+        <div class="fg"><label>Responsável South Link</label><select id="f-resp"><option value="">Selecione...</option>${RESPONSAVEIS.map(r=>`<option value="${esc(r)}"${UI.form.responsavel===r?' selected':''}>${esc(r)}</option>`).join('')}</select></div>
         <div class="fg full"><label>Data limite de envio${hasDeadline?' <span style="color:var(--purple-dark);font-weight:600">· Alerta ativo</span>':''}</label><input id="f-deadline" type="date" class="${hasDeadline?'deadline-set':''}" value="${esc(UI.form.deadline||'')}"></div>
       </div>
       <div class="section-title"><i class="ti ti-building" style="font-size:12px;margin-right:4px"></i>Dados do cliente</div>
@@ -482,7 +485,7 @@ function renderModal(){
     </div></div>`;
     setTimeout(()=>{
       const b=(id,key)=>{const el=document.getElementById(id);if(el){el.oninput=e=>{UI.form[key]=e.target.value;};el.onchange=e=>{UI.form[key]=e.target.value;};}};
-      b('f-title','title');b('f-client','client');b('f-cnpj','cnpj');b('f-contato','contato');b('f-email','email');b('f-fone','fone');b('f-cidade','cidade');b('f-pais','pais');b('f-value','value');b('f-notes','notes');b('f-resp','responsavel');b('f-pagamento','pagamento');
+      b('f-title','title');b('f-client','client');b('f-cnpj','cnpj');b('f-contato','contato');b('f-email','email');b('f-fone','fone');b('f-cidade','cidade');b('f-pais','pais');b('f-value','value');b('f-notes','notes');b('f-pagamento','pagamento');const fr=document.getElementById('f-resp');if(fr){fr.value=UI.form.responsavel||'';fr.onchange=e=>{UI.form.responsavel=e.target.value;};};
       const dl=document.getElementById('f-deadline');if(dl)dl.onchange=e=>{UI.form.deadline=e.target.value;renderModal();};
       const rs=document.getElementById('f-rep');if(rs)rs.onchange=e=>{UI.form.repId=parseInt(e.target.value);};
       const es=document.getElementById('f-estado');if(es){es.value=UI.form.estado||'';es.onchange=e=>{UI.form.estado=e.target.value;};}
