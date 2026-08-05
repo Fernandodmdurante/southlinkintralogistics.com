@@ -96,6 +96,18 @@
   .card-val{font-size:11px;font-weight:500;color:var(--text)}
   .card-date{font-size:10px;color:var(--text3)}
   .empty-col{font-size:11px;color:var(--text3);text-align:center;padding:14px 0}
+  .temp-row{display:flex;gap:5px;margin-top:7px;padding-top:7px;border-top:0.5px solid var(--border)}
+  .temp-btn{flex:1;font-size:10px;font-weight:600;padding:4px 0;border-radius:6px;border:1.5px solid transparent;cursor:pointer;font-family:inherit;transition:all .15s;text-align:center;letter-spacing:.02em}
+  .temp-btn:hover{filter:brightness(.92)}
+  .temp-hot{background:#FEE2E2;color:#991B1B;border-color:#FCA5A5}
+  .temp-hot.on{background:#EF4444;color:#fff;border-color:#EF4444}
+  .temp-warm{background:#FEF3C7;color:#92400E;border-color:#FCD34D}
+  .temp-warm.on{background:#F59E0B;color:#fff;border-color:#F59E0B}
+  .temp-cold{background:#DBEAFE;color:#1E40AF;border-color:#93C5FD}
+  .temp-cold.on{background:#3B82F6;color:#fff;border-color:#3B82F6}
+  .card.is-hot{border-left:3px solid #EF4444;border-radius:0 var(--radius) var(--radius) 0}
+  .card.is-warm{border-left:3px solid #F59E0B;border-radius:0 var(--radius) var(--radius) 0}
+  .card.is-cold{border-left:3px solid #3B82F6;border-radius:0 var(--radius) var(--radius) 0}
   .overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:flex;align-items:flex-start;justify-content:center;padding:16px 12px;overflow-y:auto}
   .modal{background:var(--bg);border-radius:var(--radius-lg);border:0.5px solid var(--border2);padding:18px;width:100%;max-width:560px;margin:auto}
   .modal-h{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px;gap:8px}
@@ -362,7 +374,7 @@ function closeModal(){UI.modal=null;UI.detailId=null;UI.editId=null;render();}
 async function saveNew(){
   const id=genId();
   const now=new Date().toISOString();
-  const p={id,title:UI.form.title||'Sem título',client:UI.form.client||'',cnpj:UI.form.cnpj||'',contato:UI.form.contato||'',email:UI.form.email||'',fone:UI.form.fone||'',cidade:UI.form.cidade||'',estado:UI.form.estado||'',pais:UI.form.pais||'Brasil',responsavel:UI.form.responsavel||'',deadline:UI.form.deadline||'',repId:parseInt(UI.form.repId)||0,stage:UI.form.stage||'envio',value:UI.form.value||0,date:UI.form.date||today(),rev:0,notes:UI.form.notes||'',motivo:'',incoterm:UI.form.incoterm||'',pagamento:UI.form.pagamento||'',comissao:UI.form.comissao||'',projetoComercial:UI.form.projetoComercial||'NAO',updatedAt:now,history:[{date:UI.form.date||today(),text:'Projeto criado. Informações enviadas à fábrica.'}]};
+  const p={id,title:UI.form.title||'Sem título',client:UI.form.client||'',cnpj:UI.form.cnpj||'',contato:UI.form.contato||'',email:UI.form.email||'',fone:UI.form.fone||'',cidade:UI.form.cidade||'',estado:UI.form.estado||'',pais:UI.form.pais||'Brasil',responsavel:UI.form.responsavel||'',deadline:UI.form.deadline||'',repId:parseInt(UI.form.repId)||0,stage:UI.form.stage||'envio',value:UI.form.value||0,date:UI.form.date||today(),rev:0,notes:UI.form.notes||'',motivo:'',incoterm:UI.form.incoterm||'',pagamento:UI.form.pagamento||'',comissao:UI.form.comissao||'',projetoComercial:UI.form.projetoComercial||'NAO',temperatura:'',updatedAt:now,history:[{date:UI.form.date||today(),text:'Projeto criado. Informações enviadas à fábrica.'}]};
   S.projects.unshift(p);saveLocal();closeModal();
   await pushProjectToSheets(p);showToast('Projeto salvo');
 }
@@ -413,12 +425,25 @@ function renderStats(st){
     <div class="stat"><div class="stat-l">Prazos urgentes</div><div class="stat-v" style="color:${st.dl>0?'var(--purple-dark)':'var(--text)'}">${st.dl}</div></div>
   `;
 }
+function setTemp(pid, temp, event){
+  event.stopPropagation(); // don't open modal
+  const p=S.projects.find(x=>x.id===pid);
+  if(!p)return;
+  // Toggle: click same again to remove
+  p.temperatura = p.temperatura===temp ? '' : temp;
+  p.updatedAt=new Date().toISOString();
+  saveLocal();
+  pushProjectToSheets(p);
+  render();
+}
+
 function renderKanban(ps){
   document.getElementById('kanban').innerHTML=STAGES.map(s=>{
     const cards=ps.filter(p=>p.stage===s.id);
     const ch=cards.length?cards.map(p=>{
       const al=alertLevel(p);const rep=REPS[p.repId];const dlAlert=isDeadlineAlert(p);
-      const cardClass='card'+(dlAlert?' deadline-alert':al?' alert-'+al:'');
+      const tempClass=p.temperatura==='quente'?' is-hot':p.temperatura==='morno'?' is-warm':p.temperatura==='frio'?' is-cold':'';
+      const cardClass='card'+(dlAlert?' deadline-alert':al?' alert-'+al:'')+tempClass;
       const chipType=dlAlert?'d':al;
       return`<div class="${cardClass}" onclick="openDetail('${esc(p.id)}')">
         <div class="card-top">
@@ -431,6 +456,11 @@ function renderKanban(ps){
         ${p.responsavel?`<div class="card-contact"><i class="ti ti-id-badge" style="font-size:10px;margin-right:3px"></i>${esc(p.responsavel)}</div>`:''}
         ${chipType?`<div class="alert-chip ${chipType}"><i class="ti ti-bell" style="font-size:10px"></i>${esc(alertText(p))}</div>`:''}
         <div class="card-foot"><span class="card-val">${fv(p.value)}</span><span class="card-date">${p.deadline?'<i class="ti ti-calendar-due" style="font-size:10px;margin-right:2px"></i>'+fd(p.deadline):fd(p.date)}</span></div>
+        <div class="temp-row">
+          <button class="temp-btn temp-hot${p.temperatura==='quente'?' on':''}" onclick="setTemp('${esc(p.id)}','quente',event)">🔥 Quente</button>
+          <button class="temp-btn temp-warm${p.temperatura==='morno'?' on':''}" onclick="setTemp('${esc(p.id)}','morno',event)">🌤 Morno</button>
+          <button class="temp-btn temp-cold${p.temperatura==='frio'?' on':''}" onclick="setTemp('${esc(p.id)}','frio',event)">❄️ Frio</button>
+        </div>
       </div>`;
     }).join(''):`<div class="empty-col">Nenhum projeto</div>`;
     const colTotal=s.id!=='envio'?cards.reduce((a,p)=>a+Number(p.value||0),0):null;
