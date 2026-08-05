@@ -210,7 +210,7 @@ const RESPONSAVEIS=['Eduardo Stinghen','Erland Fernandez','Fernando','José Ulia
 const ESTADOS=['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'];
 
 let S={nextNum:6,projects:[]};
-let UI={repF:'all',mesF:'all',anoF:'all',respF:'all',modal:null,detailId:null,editId:null,form:{}};
+let UI={repF:'all',mesF:'all',anoF:'all',respF:'all',tempF:'all',modal:null,detailId:null,editId:null,form:{}};
 
 function loadLocal(){try{const d=localStorage.getItem('sl_crm');if(d){const p=JSON.parse(d);S.projects=p.projects||[];S.nextNum=p.nextNum||6;}}catch(e){}}
 function saveLocal(){try{localStorage.setItem('sl_crm',JSON.stringify({nextNum:S.nextNum,projects:S.projects}));}catch(e){}}
@@ -241,7 +241,10 @@ function mergeProjects(local, sheets){
       const localTs = map[p.id].updatedAt || '0';
       const sheetsTs = p.updatedAt || '0';
       if(sheetsTs > localTs && p.title && p.stage){
+        // Preserve temperatura from local if sheets doesn't have it
+        const localTemp = map[p.id].temperatura || '';
         map[p.id] = p;
+        if(!map[p.id].temperatura && localTemp) map[p.id].temperatura = localTemp;
       }
     }
   }
@@ -350,6 +353,7 @@ function getFiltered(){
     if(UI.anoF!=='all'&&(!p.date||!p.date.startsWith(UI.anoF)))return false;
     if(UI.mesF!=='all'&&(!p.date||parseInt(p.date.split('-')[1])!==parseInt(UI.mesF)))return false;
     if(UI.respF!=='all'&&p.responsavel!==UI.respF)return false;
+    if(UI.tempF!=='all'&&(p.temperatura||'')!==UI.tempF)return false;
     return true;
   });
 }
@@ -414,6 +418,11 @@ function renderFilterBar(){
     <span class="sep">|</span>
     <select onchange="UI.anoF=this.value;render()"><option value="all">Todos os anos</option>${yOpts}</select>
     <select onchange="UI.mesF=this.value;render()"><option value="all">Todos os meses</option>${mOpts}</select>
+    <span class="sep">|</span>
+    <button class="pill${UI.tempF==='all'?' on':''}" onclick="UI.tempF='all';render()">Todos</button>
+    <button class="pill${UI.tempF==='quente'?' on':''}" style="${UI.tempF==='quente'?'background:#FEE2E2;color:#991B1B;border-color:#FCA5A5':''}" onclick="UI.tempF='quente';render()">🔥 Quente</button>
+    <button class="pill${UI.tempF==='morno'?' on':''}" style="${UI.tempF==='morno'?'background:#FEF3C7;color:#92400E;border-color:#FCD34D':''}" onclick="UI.tempF='morno';render()">🌤 Morno</button>
+    <button class="pill${UI.tempF==='frio'?' on':''}" style="${UI.tempF==='frio'?'background:#DBEAFE;color:#1E40AF;border-color:#93C5FD':''}" onclick="UI.tempF='frio';render()">❄️ Frio</button>
   `;
 }
 function renderStats(st){
