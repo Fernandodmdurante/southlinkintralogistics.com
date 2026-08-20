@@ -83,7 +83,7 @@
   .r0{background:var(--green-bg);color:var(--green-dark)}
   .r1{background:var(--blue-bg);color:var(--blue-dark)}
   .r2{background:var(--amber-bg);color:var(--amber-dark)}
-  .r3{background:#FBEAF0;color:#72243E}.r4{background:#EDE9FE;color:#4C1D95}
+  .r3{background:#FBEAF0;color:#72243E}.r4{background:#EDE9FE;color:#4C1D95}.r5{background:#DCFCE7;color:#14532D}
   .card-title{font-size:12px;font-weight:500;color:var(--text);margin-bottom:3px;line-height:1.35}
   .card-client{font-size:11px;color:var(--text2);margin-bottom:4px}
   .card-contact{font-size:10px;color:var(--text3);margin-bottom:4px}
@@ -168,6 +168,7 @@
     </div>
     <button class="btn" onclick="syncNow()" title="Buscar dados do Sheets"><i class="ti ti-refresh"></i></button>
     <button class="btn" onclick="pushAllToSheets()" title="Enviar todos para Sheets" style="font-size:11px"><i class="ti ti-cloud-upload"></i> Enviar</button>
+    <button class="btn" onclick="openReport()" title="Gerar relatório"><i class="ti ti-chart-bar"></i> Relatório</button>
     <button class="btn btn-pri" onclick="openNew()"><i class="ti ti-plus"></i> Novo projeto</button>
   </div>
 </header>
@@ -196,7 +197,7 @@
 <script>
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwZCTSXSnx-zqVyKipRW8n9JFB-CurdD_sfTOKk7_u6SQCvyCsE0ZSnEveCOOMOU9-Q/exec';
 
-const REPS=[{id:0,name:'Engesystems',short:'ENG'},{id:1,name:'Zikoo Robotics',short:'ZKO'},{id:2,name:'D-Lean Solutions',short:'DLS'},{id:3,name:'Forte Indústria',short:'FOR'},{id:4,name:'ZS Robotics',short:'ZSR'}];
+const REPS=[{id:0,name:'Engesystems',short:'ENG'},{id:1,name:'Zikoo Robotics',short:'ZKO'},{id:2,name:'D-Lean Solutions',short:'DLS'},{id:3,name:'Forte Indústria',short:'FOR'},{id:4,name:'ZS Robotics',short:'ZSR'},{id:5,name:'Climabrisa',short:'CLB'}];
 const STAGES=[
   {id:'envio',label:'Envio à fábrica',color:'#1D9E75',alertDays:7,alertMsg:'Contatar fábrica'},
   {id:'recebimento',label:'Recebido da fábrica',color:'#378ADD',alertDays:2,alertMsg:'Enviar ao cliente'},
@@ -614,7 +615,157 @@ async function init(){
   },300000);
 }
 
-document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&UI.modal)closeModal();});
+
+// ── Report ──
+function weekNum(dateStr){
+  if(!dateStr)return'?';
+  const d=new Date(dateStr);
+  const s=new Date(d.getFullYear(),0,1);
+  return Math.ceil(((d-s)/86400000+s.getDay()+1)/7);
+}
+function monthLabel(dateStr){
+  if(!dateStr)return'?';
+  const p=dateStr.split('-');
+  return p[1]+'/'+p[0];
+}
+function weekLabel(dateStr){
+  if(!dateStr)return'?';
+  const d=new Date(dateStr);
+  return'S'+weekNum(dateStr)+' '+d.getFullYear();
+}
+function daysBetween(d1,d2){
+  if(!d1||!d2)return null;
+  return Math.round(Math.abs(new Date(d2)-new Date(d1))/86400000);
+}
+
+function openReport(){
+  const ps=S.projects;
+  if(!ps.length){alert('Nenhum projeto para gerar relatório.');return;}
+
+  // Helper: group and sum
+  function groupBy(arr,fn){
+    const m={};
+    arr.forEach(p=>{const k=fn(p);if(!m[k])m[k]={count:0,vol:0};m[k].count++;m[k].vol+=Number(p.value||0);});
+    return m;
+  }
+  function tableRows(obj,label=''){
+    return Object.entries(obj).sort((a,b)=>b[1].vol-a[1].vol).map(([k,v])=>
+      `<tr><td>${label?label+': ':''}<strong>${k||'—'}</strong></td><td style="text-align:center">${v.count}</td><td style="text-align:right">${fv(v.vol)}</td></tr>`
+    ).join('');
+  }
+  function section(title,rows,icon=''){
+    return`<div class="rep-section">
+      <h3>${icon} ${title}</h3>
+      <table class="rep-table"><thead><tr><th>Categoria</th><th>Projetos</th><th>Volume</th></tr></thead>
+      <tbody>${rows}</tbody></table></div>`;
+  }
+
+  // Phase time analysis
+  function phaseTime(){
+    const byStage={envio:[],recebimento:[],cotacao:[],fechado:[],perdido:[]};
+    ps.forEach(p=>{
+      if(!p.history||p.history.length<2)return;
+      // Find transitions
+      let envioDate=null,recDate=null,cotDate=null,fecDate=null;
+      p.history.forEach(h=>{
+        if(h.text&&h.text.includes('criado')&&!envioDate)envioDate=h.date;
+        if(h.text&&h.text.includes('Recebido')&&!recDate)recDate=h.date;
+        if(h.text&&h.text.includes('Cotação')&&!cotDate)cotDate=h.date;
+        if(h.text&&h.text.includes('fechado')&&!fecDate)fecDate=h.date;
+      });
+      if(envioDate&&recDate)byStage.envio.push(daysBetween(envioDate,recDate));
+      if(recDate&&cotDate)byStage.recebimento.push(daysBetween(recDate,cotDate));
+      if(cotDate&&fecDate)byStage.cotacao.push(daysBetween(cotDate,fecDate));
+    });
+    const avg=arr=>arr.length?Math.round(arr.reduce((a,b)=>a+b,0)/arr.length):null;
+    return[
+      {label:'Envio → Recebimento da fábrica',avg:avg(byStage.envio),n:byStage.envio.length},
+      {label:'Recebimento → Cotação enviada',avg:avg(byStage.recebimento),n:byStage.recebimento.length},
+      {label:'Cotação → Pedido fechado',avg:avg(byStage.cotacao),n:byStage.cotacao.length},
+    ];
+  }
+
+  const byMonth=groupBy(ps,p=>monthLabel(p.date));
+  const byWeek=groupBy(ps,p=>weekLabel(p.date));
+  const byRep=groupBy(ps,p=>REPS[p.repId]?REPS[p.repId].name:'?');
+  const byResp=groupBy(ps,p=>p.responsavel||'Não definido');
+  const byTemp=groupBy(ps,p=>p.temperatura==='quente'?'🔥 Quente':p.temperatura==='morno'?'🌤 Morno':p.temperatura==='frio'?'❄️ Frio':'Sem classificação');
+  const byStageG=groupBy(ps,p=>{const s=STAGES.find(x=>x.id===p.stage);return s?s.label:'?';});
+  const phases=phaseTime();
+
+  const now=new Date();
+  const dateStr=now.toLocaleDateString('pt-BR');
+  const totalVol=ps.reduce((a,p)=>a+Number(p.value||0),0);
+  const fechados=ps.filter(p=>p.stage==='fechado');
+  const volFech=fechados.reduce((a,p)=>a+Number(p.value||0),0);
+  const taxa=ps.length?Math.round(fechados.length/ps.length*100):0;
+
+  const reportHtml=`
+  <style>
+    .rep-wrap{font-family:-apple-system,sans-serif;max-width:900px;margin:0 auto;padding:24px;color:#1a1a18}
+    .rep-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;padding-bottom:16px;border-bottom:2px solid #1D9E75}
+    .rep-header h1{font-size:22px;font-weight:700;color:#1a1a18;margin-bottom:4px}
+    .rep-header p{font-size:13px;color:#6b6b66}
+    .kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px}
+    .kpi{background:#f5f5f3;border-radius:10px;padding:14px;text-align:center}
+    .kpi-label{font-size:11px;color:#6b6b66;margin-bottom:4px}
+    .kpi-val{font-size:20px;font-weight:700;color:#1a1a18}
+    .rep-section{margin-bottom:20px;background:#fff;border:1px solid #eee;border-radius:10px;overflow:hidden}
+    .rep-section h3{font-size:13px;font-weight:600;background:#f5f5f3;padding:10px 14px;margin:0;border-bottom:1px solid #eee;color:#1a1a18}
+    .rep-table{width:100%;border-collapse:collapse;font-size:12px}
+    .rep-table th{background:#fafafa;padding:8px 12px;text-align:left;font-weight:600;color:#6b6b66;font-size:11px;border-bottom:1px solid #eee}
+    .rep-table td{padding:7px 12px;border-bottom:1px solid #f0f0f0}
+    .rep-table tr:last-child td{border-bottom:none}
+    .rep-table tr:hover td{background:#f9f9f9}
+    .phase-row{display:grid;grid-template-columns:2fr 1fr 1fr;gap:0}
+    .phase-item{padding:10px 14px;border-bottom:1px solid #eee;font-size:12px}
+    .phase-item:last-child{border-bottom:none}
+    .phase-label{color:#6b6b66;margin-bottom:3px}
+    .phase-val{font-size:18px;font-weight:700;color:#1D9E75}
+    .phase-n{font-size:11px;color:#999;margin-top:2px}
+    @media print{body{background:#fff}.rep-section{break-inside:avoid}}
+  </style>
+  <div class="rep-wrap">
+    <div class="rep-header">
+      <div>
+        <h1>📊 Relatório South Link CRM</h1>
+        <p>Gerado em ${dateStr} · ${ps.length} projetos analisados</p>
+      </div>
+      <button onclick="window.print()" style="padding:8px 14px;background:#1D9E75;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600">🖨 Imprimir / PDF</button>
+    </div>
+
+    <div class="kpi-row">
+      <div class="kpi"><div class="kpi-label">Total de projetos</div><div class="kpi-val">${ps.length}</div></div>
+      <div class="kpi"><div class="kpi-label">Volume total orçado</div><div class="kpi-val" style="font-size:14px">${fv(totalVol)}</div></div>
+      <div class="kpi"><div class="kpi-label">Pedidos fechados</div><div class="kpi-val" style="color:#1D9E75">${fv(volFech)}</div></div>
+      <div class="kpi"><div class="kpi-label">Taxa de conversão</div><div class="kpi-val">${taxa}%</div></div>
+    </div>
+
+    ${section('Por etapa atual',tableRows(byStageG),'📋')}
+    ${section('Por mês',tableRows(byMonth),'📅')}
+    ${section('Por semana',tableRows(byWeek),'🗓')}
+    ${section('Por representada',tableRows(byRep),'🏭')}
+    ${section('Por responsável South Link',tableRows(byResp),'👤')}
+    ${section('Por temperatura (Quente/Morno/Frio)',tableRows(byTemp),'🌡')}
+
+    <div class="rep-section">
+      <h3>⏱ Tempo médio entre fases</h3>
+      ${phases.map(ph=>`
+        <div class="phase-item">
+          <div class="phase-label">${ph.label}</div>
+          <div class="phase-val">${ph.avg!==null?ph.avg+'d':'Dados insuficientes'}</div>
+          <div class="phase-n">${ph.n} transição(ões) registrada(s)</div>
+        </div>`).join('')}
+    </div>
+  </div>`;
+
+  // Open report in new tab
+  const w=window.open('','_blank');
+  w.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Relatório South Link CRM</title></head><body>'+reportHtml+'</body></html>');
+  w.document.close();
+}
+
 init();
 </script>
 </body>
