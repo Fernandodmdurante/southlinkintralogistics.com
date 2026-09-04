@@ -195,7 +195,16 @@
 <div class="toast hidden" id="toast"><span class="sync-dot loading" id="toastDot"></span><span id="toastText"></span></div>
 
 <script>
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwZCTSXSnx-zqVyKipRW8n9JFB-CurdD_sfTOKk7_u6SQCvyCsE0ZSnEveCOOMOU9-Q/exec';
+// Auto-detect if running from Apps Script (same-origin, no CORS)
+const SCRIPT_URL = (()=>{
+  const u = window.location.href;
+  // If served from script.google.com, use same URL for API calls
+  if(u.includes('script.google.com') || u.includes('googleusercontent.com')){
+    return u.split('?')[0];
+  }
+  // Otherwise use hardcoded URL
+  return 'https://script.google.com/macros/s/AKfycbwZCTSXSnx-zqVyKipRW8n9JFB-CurdD_sfTOKk7_u6SQCvyCsE0ZSnEveCOOMOU9-Q/exec';
+})();
 
 const REPS=[{id:0,name:'Engesystems',short:'ENG'},{id:1,name:'Zikoo Robotics',short:'ZKO'},{id:2,name:'D-Lean Solutions',short:'DLS'},{id:3,name:'Forte Indústria',short:'FOR'},{id:4,name:'ZS Robotics',short:'ZSR'},{id:5,name:'Climabrisa',short:'CLB'}];
 const STAGES=[
@@ -227,6 +236,25 @@ function showToast(text,duration=2500){
 }
 
 // ── Sync ──
+// JSONP-style fetch via script tag to bypass CORS on custom domains
+function fetchViaScriptTag(url){
+  return new Promise((resolve)=>{
+    const cbName='_slcrm_cb_'+Date.now();
+    const scriptUrl=url+'&callback='+cbName;
+    const s=document.createElement('script');
+    let done=false;
+    window[cbName]=(data)=>{
+      done=true;
+      delete window[cbName];
+      s.remove();
+      resolve(data);
+    };
+    s.src=scriptUrl;
+    s.onerror=()=>{if(!done)resolve(null);};
+    setTimeout(()=>{if(!done){delete window[cbName];s.remove();resolve(null);}},8000);
+    document.head.appendChild(s);
+  });
+}
 // Safe merge: never overwrite a local project with an older/empty sheets version
 function mergeProjects(local, sheets){
   const map = {};
@@ -256,9 +284,17 @@ async function fetchFromSheets(){
   setSyncStatus('loading','Buscando...');
   try{
     const url=SCRIPT_URL+'?action=getAll&t='+Date.now();
-    const res=await fetch(url,{method:'GET',mode:'cors'});
-    if(!res.ok)throw new Error('HTTP '+res.status);
-    const data=await res.json();
+    // Try cors first, fallback to no-cors (which won't return data but won't error)
+    let res,data;
+    try{
+      res=await fetch(url,{method:'GET',mode:'cors'});
+      if(!res.ok)throw new Error('HTTP '+res.status);
+      data=await res.json();
+    }catch(corsErr){
+      // CORS blocked - try via script tag (JSONP-like workaround)
+      data = await fetchViaScriptTag(url);
+      if(!data)throw corsErr;
+    }
     if(data.projects&&Array.isArray(data.projects)){
       const merged=mergeProjects(S.projects, data.projects);
       // Safety check: never reduce project count from merge
@@ -288,7 +324,7 @@ async function pushAllToSheets(){
       if(!p.updatedAt)p.updatedAt=new Date().toISOString();
       const data=encodeURIComponent(JSON.stringify(p));
       const url=SCRIPT_URL+'?action=save&data='+data;
-      await fetch(url,{method:'GET',mode:'no-cors'});
+      await fetch(url,{method:'GET',mode:SCRIPT_URL.includes('googleusercontent')||window.location.href.includes('googleusercontent')?'cors':'no-cors'});
       sent++;
     }catch(e){}
     await new Promise(r=>setTimeout(r,300));
@@ -303,14 +339,14 @@ async function pushProjectToSheets(project){
     if(!project.updatedAt)project.updatedAt=new Date().toISOString();
     const data=encodeURIComponent(JSON.stringify(project));
     const url=SCRIPT_URL+'?action=save&data='+data;
-    await fetch(url,{method:'GET',mode:'no-cors'});
+    await fetch(url,{method:'GET',mode:SCRIPT_URL.includes('googleusercontent')||window.location.href.includes('googleusercontent')?'cors':'no-cors'});
   }catch(e){}
 }
 
 async function deleteFromSheets(id){
   try{
     const url=SCRIPT_URL+'?action=delete&id='+encodeURIComponent(id);
-    await fetch(url,{method:'GET',mode:'no-cors'});
+    await fetch(url,{method:'GET',mode:SCRIPT_URL.includes('googleusercontent')||window.location.href.includes('googleusercontent')?'cors':'no-cors'});
   }catch(e){}
 }
 
