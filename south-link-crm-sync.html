@@ -236,43 +236,24 @@ function showToast(text,duration=2500){
 }
 
 // ── Sync ──
-// JSONP-style fetch via script tag to bypass CORS on custom domains
-function fetchViaScriptTag(url){
-  return new Promise((resolve)=>{
-    const cbName='_slcrm_cb_'+Date.now();
-    const scriptUrl=url+'&callback='+cbName;
-    const s=document.createElement('script');
-    let done=false;
-    window[cbName]=(data)=>{
-      done=true;
-      delete window[cbName];
-      s.remove();
-      resolve(data);
-    };
-    s.src=scriptUrl;
-    s.onerror=()=>{if(!done)resolve(null);};
-    setTimeout(()=>{if(!done){delete window[cbName];s.remove();resolve(null);}},8000);
-    document.head.appendChild(s);
-  });
-}
-// Safe merge: never overwrite a local project with an older/empty sheets version
-function mergeProjects(local, sheets){
+// ── Sync engine — POST-based, no URL length limits, works on any domain ──
+
+// Merge: prefer newer updatedAt, never drop valid local projects
+function mergeProjects(local, remote){
   const map = {};
   for(const p of local){
-    if(p.id && p.title) map[p.id] = {...p}; // only keep valid local projects
+    if(p.id && p.title && p.stage) map[p.id] = {...p};
   }
-  for(const p of sheets){
-    if(!p.id || !p.title) continue; // skip empty/invalid sheets rows
+  for(const p of remote){
+    if(!p.id || !p.title) continue;
     if(!map[p.id]){
-      map[p.id] = p; // new project from sheets not in local
+      map[p.id] = p;
     } else {
-      // Only override local if sheets version is strictly newer AND has valid data
-      const localTs = map[p.id].updatedAt || '0';
-      const sheetsTs = p.updatedAt || '0';
-      if(sheetsTs > localTs && p.title && p.stage){
-        // Preserve temperatura from local if sheets doesn't have it
+      const lt = map[p.id].updatedAt || '0';
+      const rt = p.updatedAt || '0';
+      if(rt > lt && p.title && p.stage){
         const localTemp = map[p.id].temperatura || '';
-        map[p.id] = p;
+        map[p.id] = {...p};
         if(!map[p.id].temperatura && localTemp) map[p.id].temperatura = localTemp;
       }
     }
@@ -280,28 +261,43 @@ function mergeProjects(local, sheets){
   return Object.values(map).sort((a,b)=>(b.id||'').localeCompare(a.id||''));
 }
 
+// POST helper — works on all domains, no URL length limit
+async function postToSheets(payload){
+  const res = await fetch(SCRIPT_URL, {
+    method: 'POST',
+    mode: 'cors',
+    headers: {'Content-Type': 'text/plain'}, // text/plain avoids CORS preflight
+    body: JSON.stringify(payload)
+  });
+  if(!res.ok) throw new Error('HTTP '+res.status);
+  return await res.json();
+}
+
+// GET helper — for reading data (getAll)
+async function getFromSheets(){
+  const url = SCRIPT_URL+'?action=getAll&t='+Date.now();
+  const res = await fetch(url, {method:'GET', mode:'cors'});
+  if(!res.ok) throw new Error('HTTP '+res.status);
+  return await res.json();
+}
+
 async function fetchFromSheets(){
   setSyncStatus('loading','Buscando...');
   try{
-    const url=SCRIPT_URL+'?action=getAll&t='+Date.now();
-    // Try cors first, fallback to no-cors (which won't return data but won't error)
-    let res,data;
-    try{
-      res=await fetch(url,{method:'GET',mode:'cors'});
-      if(!res.ok)throw new Error('HTTP '+res.status);
-      data=await res.json();
-    }catch(corsErr){
-      // CORS blocked - try via script tag (JSONP-like workaround)
-      data = await fetchViaScriptTag(url);
-      if(!data)throw corsErr;
-    }
-    if(data.projects&&Array.isArray(data.projects)){
-      const merged=mergeProjects(S.projects, data.projects);
-      // Safety check: never reduce project count from merge
-      if(merged.length>=S.projects.length){
-        S.projects=merged;
-        const maxNum=merged.reduce((m,p)=>{const n=parseInt((p.id||'').split('-').pop()||'0');return n>m?n:m;},S.nextNum-1);
-        S.nextNum=maxNum+1;
+    const data = await getFromSheets();
+    if(data.projects && Array.isArray(data.projects)){
+      const remote = data.projects;
+      const local = S.projects;
+      const merged = mergeProjects(local, remote);
+      // Only update if merged has at least as many valid projects as local
+      const localValid = local.filter(p=>p.id&&p.title&&p.stage).length;
+      if(merged.length >= localValid){
+        S.projects = merged;
+        const maxNum = merged.reduce((m,p)=>{
+          const n=parseInt((p.id||'').split('-').pop()||'0');
+          return n>m?n:m;
+        }, S.nextNum-1);
+        S.nextNum = maxNum+1;
         saveLocal();
       }
       setSyncStatus('ok','Sincronizado');
@@ -310,50 +306,60 @@ async function fetchFromSheets(){
     throw new Error('Resposta inválida');
   }catch(e){
     setSyncStatus('err','Erro de conexão');
+    console.warn('fetchFromSheets error:', e);
     return false;
   }
 }
 
+// Send ALL projects via POST saveAll — single request, no URL limit
 async function pushAllToSheets(){
   if(S.projects.length===0){showToast('Nenhum projeto para enviar');return;}
   setSyncStatus('loading','Enviando...');
-  showToast('Enviando '+S.projects.length+' projetos...',8000);
-  let sent=0;
-  for(const p of S.projects){
-    try{
-      if(!p.updatedAt)p.updatedAt=new Date().toISOString();
-      const data=encodeURIComponent(JSON.stringify(p));
-      const url=SCRIPT_URL+'?action=save&data='+data;
-      await fetch(url,{method:'GET',mode:SCRIPT_URL.includes('googleusercontent')||window.location.href.includes('googleusercontent')?'cors':'no-cors'});
-      sent++;
-    }catch(e){}
-    await new Promise(r=>setTimeout(r,300));
+  showToast('Enviando '+S.projects.length+' projetos...',10000);
+  try{
+    const result = await postToSheets({action:'saveAll', projects: S.projects});
+    if(result.ok){
+      setSyncStatus('ok','Enviado');
+      showToast(result.count+' projetos salvos no Sheets!',3000);
+    } else {
+      throw new Error(result.error||'Erro desconhecido');
+    }
+  }catch(e){
+    // Fallback: send one by one
+    console.warn('saveAll failed, trying one by one:', e);
+    let sent=0;
+    for(const p of S.projects){
+      try{
+        await postToSheets({action:'save', project: p});
+        sent++;
+      }catch(err){}
+      await new Promise(r=>setTimeout(r,200));
+    }
+    setSyncStatus('ok','Enviado');
+    showToast(sent+'/'+S.projects.length+' projetos enviados.',3000);
   }
   saveLocal();
-  setSyncStatus('ok','Enviado');
-  showToast(sent+' projetos enviados! Atualize o celular.',3000);
 }
 
 async function pushProjectToSheets(project){
   try{
-    if(!project.updatedAt)project.updatedAt=new Date().toISOString();
-    const data=encodeURIComponent(JSON.stringify(project));
-    const url=SCRIPT_URL+'?action=save&data='+data;
-    await fetch(url,{method:'GET',mode:SCRIPT_URL.includes('googleusercontent')||window.location.href.includes('googleusercontent')?'cors':'no-cors'});
-  }catch(e){}
+    if(!project.updatedAt) project.updatedAt = new Date().toISOString();
+    await postToSheets({action:'save', project});
+  }catch(e){
+    console.warn('pushProject error:', e);
+  }
 }
 
 async function deleteFromSheets(id){
   try{
-    const url=SCRIPT_URL+'?action=delete&id='+encodeURIComponent(id);
-    await fetch(url,{method:'GET',mode:SCRIPT_URL.includes('googleusercontent')||window.location.href.includes('googleusercontent')?'cors':'no-cors'});
+    await postToSheets({action:'delete', id});
   }catch(e){}
 }
 
 async function syncNow(){
   setSyncStatus('loading','Buscando...');
-  const ok=await fetchFromSheets();
-  if(ok)render();
+  const ok = await fetchFromSheets();
+  if(ok) render();
 }
 
 function saveScriptUrl(){
