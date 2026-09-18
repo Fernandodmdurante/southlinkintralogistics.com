@@ -239,6 +239,9 @@ function showToast(text,duration=2500){
 // ── Sync engine — POST-based, no URL length limits, works on any domain ──
 
 // Merge: prefer newer updatedAt, never drop valid local projects
+// Fields that must NEVER be lost from local version during merge
+const PRESERVE_FIELDS = ['incoterm','pagamento','comissao','comissaoRep','projetoComercial','temperatura','cnpj','contato','email','fone','cidade','estado','pais','deadline','responsavel'];
+
 function mergeProjects(local, remote){
   const map = {};
   for(const p of local){
@@ -252,9 +255,17 @@ function mergeProjects(local, remote){
       const lt = map[p.id].updatedAt || '0';
       const rt = p.updatedAt || '0';
       if(rt > lt && p.title && p.stage){
-        const localTemp = map[p.id].temperatura || '';
-        map[p.id] = {...p};
-        if(!map[p.id].temperatura && localTemp) map[p.id].temperatura = localTemp;
+        // Start with remote version
+        const merged = {...p};
+        // Preserve local fields that remote has empty/missing
+        // This protects incoterm, pagamento, comissao etc from being wiped
+        for(const field of PRESERVE_FIELDS){
+          if((merged[field]===undefined||merged[field]===null||merged[field]==='')
+             && map[p.id][field]){
+            merged[field] = map[p.id][field];
+          }
+        }
+        map[p.id] = merged;
       }
     }
   }
